@@ -1,131 +1,144 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org"
-    xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
-
-<head>
-
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="description" content="">
-    <meta name="author" content="">
-
-    <title>Bajaj Admin - Dashboard</title>
-
-    <!-- Custom fonts for this template-->
-    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-
-
-    <!-- Custom styles for this template-->
-    <link href="css/sb-admin-2.min.css" rel="stylesheet">
-
-</head>
-
-<body id="page-top">
-
-    <!-- Page Wrapper -->
-    <div id="wrapper">
-
-        <!-- Sidebar -->
-		<ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar" th:insert="~{SideBar::SideBar}"></ul>
-        <!-- End of Sidebar -->
-
-        <!-- Content Wrapper -->
-        <div id="content-wrapper" class="d-flex flex-column">
-
-            <!-- Main Content -->
-            <div id="content">
-
-                <!-- Topbar -->
-				<section th:insert="~{Navbar::Navbar}"></section>
-                <!-- End of Topbar -->
-
-                <!-- Begin Page Content -->
-
-
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Dashboard')}"></head>
+<body class="font-sans bg-background text-on-surface">
+<th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('dashboard')}"></th:block>
+<main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
+    <th:block th:replace="~{fragments/hrms-header :: hrmsHeader('Dashboard')}"></th:block>
+    <div class="hrms-page-canvas flex-1">
+        <section class="hrms-dashboard-summary" aria-label="Data overview">
+            <div class="hrms-dashboard-summary__head">
+                <div>
+                    <h2 class="hrms-dashboard-summary__title">Data overview</h2>
+                    <p class="hrms-dashboard-summary__sub">Live counts from main tables in <span class="hrms-dashboard-summary__schema" th:text="${businessSchema} ?: 'hrms_bre'">hrms_bre</span></p>
+                </div>
+                <span id="dash-summary-updated" class="hrms-badge hrms-dashboard-summary__badge">Loading…</span>
             </div>
-            <!-- End of Main Content -->
 
-            <!-- Footer -->
-			<footer class="sticky-footer bg-white" th:insert="~{Footer::Footer}"></footer>
-            </footer>
-            <!-- End of Footer -->
-
-        </div>
-        <!-- End of Content Wrapper -->
-
-    </div>
-    <!-- End of Page Wrapper -->
-
-    <!-- Scroll to Top Button-->
-    <a class="scroll-to-top rounded" href="#page-top"> <i class="fas fa-angle-up"></i>
-    </a>
-
-    <!-- Logout Modal-->
-    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <div class="modal-body">Select "Logout" to end your current session.</div>
-                <div class="modal-footer">
-                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
-                    <a class="btn btn-primary" href="/logout">Logout</a>
-                </div>
-            </div>
-        </div>
-    </div>
-    <!-- Profile Modal  -->
-    <div class="modal fade" id="profileModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Profile</h5>
-                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">×</span>
-                    </button>
-                </div>
-                <!-- <div class="modal-body">Profile Info</div> -->
-                <div class="modal-body mx-3">
-					
-                    <div class="md-form mb-4">
-                        <label>User Name :=
-                            <h6 th:text="${session.userName}"></h6>
-                        </label>
-
+            <div class="hrms-dashboard-stats">
+                <div class="hrms-dashboard-stat">
+                    <span class="hrms-dashboard-stat__icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">table_view</span>
+                    </span>
+                    <div class="hrms-dashboard-stat__body">
+                        <span id="dash-stat-tables" class="hrms-dashboard-stat__value">—</span>
+                        <span class="hrms-dashboard-stat__label">Main tables</span>
                     </div>
-
-                    <div class="md-form mb-4">
-                        <label>Email :=
-                            <h6 th:text="${session.email}"></h6> 
-                        </label>
-
-                    </div>
-
                 </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary" type="button" data-dismiss="modal">Back</button>
-                    <!-- <a class="btn btn-primary" href="logout">Logout</a> -->
+                <div class="hrms-dashboard-stat">
+                    <span class="hrms-dashboard-stat__icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">dataset</span>
+                    </span>
+                    <div class="hrms-dashboard-stat__body">
+                        <span id="dash-stat-records" class="hrms-dashboard-stat__value">—</span>
+                        <span class="hrms-dashboard-stat__label">Total records</span>
+                    </div>
+                </div>
+                <div class="hrms-dashboard-stat hrms-dashboard-stat--wide">
+                    <span class="hrms-dashboard-stat__icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">update</span>
+                    </span>
+                    <div class="hrms-dashboard-stat__body">
+                        <span id="dash-stat-last" class="hrms-dashboard-stat__value">—</span>
+                        <span class="hrms-dashboard-stat__label">Latest change</span>
+                        <span id="dash-stat-last-table" class="hrms-dashboard-stat__hint">—</span>
+                    </div>
                 </div>
             </div>
-        </div>
+
+            <p id="dash-summary-error" class="hrms-dashboard-summary__error" role="status" hidden></p>
+
+            <div class="hrms-dashboard-quick">
+                <span class="hrms-dashboard-quick__label">Quick access</span>
+                <div class="hrms-dashboard-quick__links">
+                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/search-data}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                        Search
+                    </a>
+                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/table-status}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">table_chart</span>
+                        Table status
+                    </a>
+                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/history-data}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">history</span>
+                        History
+                    </a>
+                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-upload}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span>
+                        Bulk upload
+                    </a>
+                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-movement}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span>
+                        Data movement
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="hrms-dashboard-section" aria-labelledby="dash-data-heading">
+            <h3 id="dash-data-heading" class="hrms-dashboard-section__title">Data management</h3>
+            <div class="hrms-module-grid">
+                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/search-data}" class="hrms-module-card">
+                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">search</span></span>
+                    <span class="hrms-module-card__body">
+                        <span class="hrms-module-card__title">Search Data</span>
+                        <span class="hrms-module-card__desc">Query tables and export</span>
+                    </span>
+                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
+                </a>
+                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/history-data}" class="hrms-module-card">
+                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">history</span></span>
+                    <span class="hrms-module-card__body">
+                        <span class="hrms-module-card__title">History Data</span>
+                        <span class="hrms-module-card__desc">Audit snapshots</span>
+                    </span>
+                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
+                </a>
+                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-upload}" class="hrms-module-card">
+                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">cloud_upload</span></span>
+                    <span class="hrms-module-card__body">
+                        <span class="hrms-module-card__title">Bulk Upload</span>
+                        <span class="hrms-module-card__desc">CSV import</span>
+                    </span>
+                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
+                </a>
+                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/table-status}" class="hrms-module-card">
+                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">table_chart</span></span>
+                    <span class="hrms-module-card__body">
+                        <span class="hrms-module-card__title">Table Status</span>
+                        <span class="hrms-module-card__desc">Counts and last updated</span>
+                    </span>
+                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
+                </a>
+            </div>
+        </section>
+
+        <section class="hrms-dashboard-section" sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" aria-labelledby="dash-admin-heading">
+            <h3 id="dash-admin-heading" class="hrms-dashboard-section__title">Administration</h3>
+            <div class="hrms-module-grid">
+                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-movement}" class="hrms-module-card">
+                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">swap_horiz</span></span>
+                    <span class="hrms-module-card__body">
+                        <span class="hrms-module-card__title">Data Movement</span>
+                        <span class="hrms-module-card__desc">Master and main transfers</span>
+                    </span>
+                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
+                </a>
+                <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/user-management}" class="hrms-module-card">
+                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">manage_accounts</span></span>
+                    <span class="hrms-module-card__body">
+                        <span class="hrms-module-card__title">User Management</span>
+                        <span class="hrms-module-card__desc">Users and security logs</span>
+                    </span>
+                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
+                </a>
+            </div>
+        </section>
     </div>
-
-
-    <!-- Bootstrap core JavaScript-->
-    <script src="vendor/jquery/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-
-    <!-- Core plugin JavaScript-->
-    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
-
-    <!-- Custom scripts for all pages-->
-    <script src="js/sb-admin-2.min.js"></script>
-
+</main>
+<th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts}"></th:block>
+<script th:src="@{/js/hrms-dashboard.js}"></script>
 </body>
-
 </html>

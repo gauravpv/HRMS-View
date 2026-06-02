@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Already Signed In')}"></head>
+<body class="font-sans bg-background flex items-center justify-center min-h-screen p-lg">
+<article class="hrms-panel max-w-md w-full text-center">
+    <div class="hrms-panel-accent"></div>
+    <div class="hrms-panel-body py-xl">
+        <div class="hrms-empty-state-icon mx-auto is-visible" style="display:flex">
+            <span class="material-symbols-outlined">info</span>
+        </div>
+        <h1 class="font-headline-md text-primary mb-sm">Already signed in</h1>
+        <p class="font-body-md text-on-surface-variant mb-lg">This account has an active session elsewhere.</p>
+        <a th:href="@{/}" class="hrms-btn hrms-btn-primary">Go to dashboard</a>
+    </div>
+</article>
+</body>
+</html>

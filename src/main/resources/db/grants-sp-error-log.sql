@@ -1,0 +1,2 @@
+-- Deprecated: run create-sp-error-log.sql instead (creates tables + grants).
+-- See: src/main/resources/db/create-sp-error-log.sql

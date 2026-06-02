@@ -1,0 +1,17 @@
+<head th:fragment="hrmsHead(pageTitle)" xmlns:th="http://www.thymeleaf.org">
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title th:text="${pageTitle} + ' | HRMS Core'">HRMS Core</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config" th:src="@{/js/hrms-tailwind-config.js}"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" th:href="@{/css/hrms-design-tokens.css}"/>
+    <link rel="stylesheet" th:href="@{/css/hrms-layout.css}"/>
+    <link rel="stylesheet" th:href="@{/css/hrms-theme.css}"/>
+    <link rel="stylesheet" th:href="@{/css/hrms-data-pages.css}"/>
+    <link rel="stylesheet" th:href="@{/vendor/datatables/dataTables.bootstrap4.min.css}"/>
+    <style>
+        html, body { font-family: var(--hrms-font-sans); }
+    </style>
+</head>

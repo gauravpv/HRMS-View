@@ -1,148 +1,155 @@
 package com.app.security;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
-
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.core.authority.SimpleGrantedAuthority;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserRequest;
-import org.springframework.security.oauth2.client.oidc.userinfo.OidcUserService;
-import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
-import org.springframework.security.oauth2.core.oidc.user.DefaultOidcUser;
-import org.springframework.security.oauth2.core.oidc.user.OidcUser;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
-import com.app.model.Users;
 import com.app.repository.RoleRepository;
 import com.app.repository.UserRepository;
 import com.app.security.handler.CustomAuthenticationSuccessHandler;
-import com.app.serviceImpl.UserSessionServiceImpl;
-
+import com.app.security.handler.FormLoginAuthenticationSuccessHandler;
+import com.app.service.impl.UserSessionServiceImpl;
 
 @Configuration
 @EnableWebSecurity
-public class SecurityConfig{
-	
-	
+public class SecurityConfig {
+
+    private static final Logger logger = LogManager.getLogger(SecurityConfig.class);
+
+    @Value("${app.auth.azure.enabled:false}")
+    private boolean azureEnabled;
+
     @Autowired
     private CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
-    
+
     @Autowired
-    private RoleRepository roleRepo; 
-    
+    private FormLoginAuthenticationSuccessHandler formLoginAuthenticationSuccessHandler;
+
     @Autowired
-    private UserRepository userRepo; 
-    
+    private HrmsUserDetailsService hrmsUserDetailsService;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
     @Autowired
     private UserSessionServiceImpl userSessionService;
-    
-    @Value("${spring.cloud.azure.active-directory.profile.tenant-id}")
-    private String tenantId;
 
     @Bean
-    SecurityFilterChain filterChain(HttpSecurity http) throws Exception{
-	    http
-    		.csrf(customizer -> customizer.disable())
-    		.authorizeHttpRequests((request) -> request
-				.requestMatchers("/").hasAnyAuthority("ADMIN","EDITOR","USER")
-				.requestMatchers("/index").hasAnyAuthority("ADMIN","EDITOR","USER")
-				.requestMatchers("/notfound").hasAnyAuthority("ADMIN","EDITOR","USER")
-				.requestMatchers("/session-expired").hasAnyAuthority("ADMIN","EDITOR","USER")
-				.requestMatchers("/dataUpload").hasAnyAuthority("ADMIN","EDITOR")
-				.requestMatchers("/searchData").hasAnyAuthority("ADMIN","EDITOR","USER")
-				.requestMatchers("/historyData").hasAnyAuthority("ADMIN","EDITOR","USER")
-				.requestMatchers("/moveToMaster").hasAnyAuthority("ADMIN","EDITOR")
-				.requestMatchers("/moveToMain").hasAnyAuthority("ADMIN","EDITOR")
-				.requestMatchers("/users").hasAnyAuthority("ADMIN")
-				.requestMatchers("/active").hasAnyAuthority("ADMIN")
-				.requestMatchers("/inActive").hasAnyAuthority("ADMIN")
-				.requestMatchers("/deActive").hasAnyAuthority("ADMIN")
-				.requestMatchers("/activate").hasAnyAuthority("ADMIN")
-				.requestMatchers("/api/user/**").hasAnyAuthority("ADMIN","EDITOR","USER")
-				.requestMatchers("/js/**", "/css/**").permitAll()
-				.anyRequest().authenticated())
-    		.oauth2Login(oauth2Login -> oauth2Login
-                .userInfoEndpoint(userInfoEndpoint -> 
-                    userInfoEndpoint
-                        .oidcUserService(oidcUserService1())
-                )
-                .successHandler(customAuthenticationSuccessHandler))
-    		.logout(logout -> logout
-	            .logoutUrl("/logout")
-	            .logoutSuccessHandler((request, response, authentication) -> {
-	            	DefaultOidcUser oidcUser = (DefaultOidcUser) authentication.getPrincipal();
-	                String preferredUsername = oidcUser.getAttribute("preferred_username");
-	                userSessionService.setSessionInactiveOnLogout(preferredUsername);
-	            	//System.out.println(preferredUsername);
-	                if (request.getSession() != null) {
-	                    request.getSession().invalidate();
-	                }
-	            })
-	            .deleteCookies("JSESSIONID")
-	            .permitAll()
-	        )
-            .sessionManagement(session -> session
-                .maximumSessions(1)   // Allow only one active session per user
-                .maxSessionsPreventsLogin(true)  // Prevent new login if the max session is reached
-                .expiredUrl("/session-expired")  // Redirect to this page if the session is expired
-            );
-//            .headers(headers -> headers
-//            	    .contentSecurityPolicy(csp -> csp
-//            	        .policyDirectives("default-src 'self'; script-src 'self' http://localhost:8090 'unsafe-inline'; script-src-elem 'unsafe-inline' http://localhost:8090 https://cdnjs.cloudflare.com https://code.jquery.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:;")
-//            	    )
-//            );
-
-	    
-	    return http.build();
-	}
-
-    @Bean
-    AuthenticationSuccessHandler authenticationSuccessHandler() {
-        return (request, response, authentication) -> {
-            var oidcUser = (org.springframework.security.oauth2.core.oidc.user.OidcUser) authentication.getPrincipal();
-            String userName = oidcUser.getFullName(); // User's full name
-            String email = oidcUser.getPreferredUsername(); // User's email        
-            System.out.println("User Name: " + userName);
-            System.out.println("User Email: " + email);
-            response.sendRedirect("/");
-        };
-	}
-
-    @Bean
-    OidcUserService oidcUserService() {
-        OidcUserService oidcUserService = new OidcUserService();
-        return oidcUserService;
+    PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder();
     }
-    
-    private OAuth2UserService<OidcUserRequest, OidcUser> oidcUserService1() {
-		final OidcUserService delegate = new OidcUserService();
 
-		return (userRequest) -> {
-			OidcUser oidcUser = delegate.loadUser(userRequest);
-			String email = oidcUser.getPreferredUsername();
-			Optional<Users> existingUser = userRepo.findByEmail(email);
-			 if (!(existingUser.isEmpty())) {
-				    Users userSession = existingUser.get();
-					List<String> roles = roleRepo.findRolebyUserId(userSession.getUserId());
-			        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-			        
-			        for (String role : roles) {
-			            authorities.add(new SimpleGrantedAuthority(role));
-			        }
-			        oidcUser = new DefaultOidcUser(authorities, oidcUser.getIdToken(), oidcUser.getUserInfo());
-			 }
-			
-			return oidcUser;
-		};
-	}
+    @Bean
+    SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
+    }
+
+    @Bean
+    DaoAuthenticationProvider daoAuthenticationProvider() {
+        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        provider.setUserDetailsService(hrmsUserDetailsService);
+        provider.setPasswordEncoder(passwordEncoder());
+        return provider;
+    }
+
+    @Bean
+    SecurityFilterChain filterChain(HttpSecurity http, SessionRegistry sessionRegistry) throws Exception {
+        http
+            .csrf(csrf -> csrf.disable())
+            .authorizeHttpRequests(request -> request
+                .requestMatchers("/login", "/css/**", "/js/**", "/img/**", "/vendor/**").permitAll()
+                .requestMatchers(
+                        "/error", "/access-denied",
+                        "/not-found", "/notfound",
+                        "/logged-in", "/loggedin",
+                        "/session-expired")
+                    .permitAll()
+                .requestMatchers("/").hasAnyAuthority("ADMIN", "EDITOR", "USER")
+                .requestMatchers("/index").hasAnyAuthority("ADMIN", "EDITOR", "USER")
+                .requestMatchers(
+                        "/data-management", "/dataManagement",
+                        "/search-data", "/searchData",
+                        "/history-data", "/historyData",
+                        "/table-status", "/tableStatus")
+                    .hasAnyAuthority("ADMIN", "EDITOR", "USER")
+                .requestMatchers("/data-upload", "/dataUpload").hasAnyAuthority("ADMIN", "EDITOR")
+                .requestMatchers(
+                        "/data-movement", "/dataMovement",
+                        "/move-to-master", "/moveToMaster",
+                        "/move-to-main", "/moveToMain")
+                    .hasAnyAuthority("ADMIN", "EDITOR")
+                .requestMatchers(
+                        "/user-management", "/userManagement",
+                        "/users", "/active", "/inactive", "/inActive")
+                    .hasAuthority("ADMIN")
+                .requestMatchers("/deactivate", "/deActive", "/activate").hasAuthority("ADMIN")
+                .requestMatchers("/api/user/**").hasAnyAuthority("ADMIN", "EDITOR", "USER")
+                .anyRequest().authenticated());
+
+        if (azureEnabled) {
+            logger.info("Security: Azure AD OAuth2 login enabled");
+            http.oauth2Login(oauth2 -> oauth2
+                .loginPage("/login")
+                .userInfoEndpoint(userInfo -> userInfo
+                    .oidcUserService(new AzureOidcUserService(userRepository, roleRepository)))
+                .successHandler(customAuthenticationSuccessHandler));
+        } else {
+            logger.info("Security: form login enabled");
+            http
+                .authenticationProvider(daoAuthenticationProvider())
+                .formLogin(form -> form
+                    .loginPage("/login")
+                    .loginProcessingUrl("/login")
+                    .usernameParameter("username")
+                    .passwordParameter("password")
+                    .successHandler(formLoginAuthenticationSuccessHandler)
+                    .failureHandler((request, response, exception) -> {
+                        logger.warn("Form login failed from {}: {}", request.getRemoteAddr(), exception.getMessage());
+                        response.sendRedirect(request.getContextPath() + "/login?error=true");
+                    })
+                    .permitAll());
+        }
+
+        http
+            .exceptionHandling(ex -> ex.accessDeniedPage("/access-denied"))
+            .logout(logout -> logout
+                .logoutUrl("/logout")
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    String principal = authentication != null ? authentication.getName() : "anonymous";
+                    logger.debug("Logout user={} remote={}", principal, request.getRemoteAddr());
+                    if (authentication != null) {
+                        userSessionService.setSessionInactiveOnLogout(authentication.getName());
+                    }
+                    if (request.getSession() != null) {
+                        request.getSession().invalidate();
+                    }
+                    response.sendRedirect("/login?logout=true");
+                })
+                .deleteCookies("JSESSIONID")
+                .permitAll())
+            .sessionManagement(session -> session
+                .maximumSessions(1)
+                .maxSessionsPreventsLogin(true)
+                .sessionRegistry(sessionRegistry)
+                .expiredUrl("/session-expired"));
+
+        return http.build();
+    }
 
     @Bean
     HttpSessionEventPublisher httpSessionEventPublisher() {

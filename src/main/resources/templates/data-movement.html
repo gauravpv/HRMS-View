@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Data Movement')}"></head>
+<body class="font-sans bg-background text-on-surface">
+<th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('data-movement')}"></th:block>
+<main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
+    <th:block th:replace="~{fragments/hrms-header :: hrmsHeader('Data Movement')}"></th:block>
+    <div class="hrms-page-canvas flex-1">
+        <div class="hrms-movement-columns">
+            <section id="master-section" class="hrms-data-results hrms-move-panel" aria-labelledby="master-heading">
+                <div class="hrms-results-block hrms-move-panel__inner">
+                    <header class="hrms-move-panel__head">
+                        <h3 id="master-heading">
+                            <span class="material-symbols-outlined text-secondary text-[22px]" aria-hidden="true">publish</span>
+                            Move to Master
+                        </h3>
+                        <span class="hrms-move-panel__step">Step 1</span>
+                    </header>
+
+                    <div class="hrms-move-panel__tools">
+                        <span id="master-count" class="hrms-move-panel__count">0 of 0 selected</span>
+                        <div class="hrms-move-panel__quick" role="group" aria-label="Selection shortcuts">
+                            <button type="button" class="hrms-btn hrms-btn-outline hrms-btn-sm" data-select-all="master">All</button>
+                            <button type="button" class="hrms-btn hrms-btn-outline hrms-btn-sm" data-select-none="master">None</button>
+                        </div>
+                    </div>
+
+                    <label class="hrms-move-search" for="master-search">
+                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                        <input type="search" id="master-search" class="hrms-input"
+                               placeholder="Filter tables…" autocomplete="off"/>
+                    </label>
+
+                    <div class="hrms-move-list custom-scrollbar" role="group" aria-label="Staging tables for master">
+                        <label th:each="table : ${tableMasterList}" class="hrms-move-row">
+                            <input type="checkbox" class="table-checkbox-master" th:value="${table}"/>
+                            <span class="hrms-move-row__label" th:text="${#strings.toUpperCase(#strings.replace(table,'_master',''))}">table</span>
+                        </label>
+                    </div>
+
+                    <small id="master-msg" class="hrms-move-msg" role="alert"></small>
+
+                    <div class="hrms-move-actions">
+                        <button type="button" onclick="validateMasterMove()" class="hrms-btn hrms-btn-primary">
+                            <span class="hrms-btn__label">Move to Master</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <section id="main-section" class="hrms-data-results hrms-move-panel" aria-labelledby="main-heading">
+                <div class="hrms-results-block hrms-move-panel__inner">
+                    <header class="hrms-move-panel__head">
+                        <h3 id="main-heading">
+                            <span class="material-symbols-outlined text-secondary text-[22px]" aria-hidden="true">cloud_upload</span>
+                            Move to Main
+                        </h3>
+                        <span class="hrms-move-panel__step">Step 2</span>
+                    </header>
+
+                    <div class="hrms-move-panel__tools">
+                        <span id="main-count" class="hrms-move-panel__count">0 of 0 selected</span>
+                        <div class="hrms-move-panel__quick" role="group" aria-label="Selection shortcuts">
+                            <button type="button" class="hrms-btn hrms-btn-outline hrms-btn-sm" data-select-all="main">All</button>
+                            <button type="button" class="hrms-btn hrms-btn-outline hrms-btn-sm" data-select-none="main">None</button>
+                        </div>
+                    </div>
+
+                    <label class="hrms-move-search" for="main-search">
+                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                        <input type="search" id="main-search" class="hrms-input"
+                               placeholder="Filter tables…" autocomplete="off"/>
+                    </label>
+
+                    <div class="hrms-move-list custom-scrollbar" role="group" aria-label="Master tables for main">
+                        <label th:each="table : ${tableMainList}" class="hrms-move-row">
+                            <input type="checkbox" class="table-checkbox-main" th:value="${table}"/>
+                            <span class="hrms-move-row__label" th:text="${#strings.toUpperCase(#strings.replace(table,'_master',''))}">table</span>
+                        </label>
+                    </div>
+
+                    <small id="main-msg" class="hrms-move-msg" role="alert"></small>
+
+                    <div class="hrms-move-actions">
+                        <button type="button" onclick="validateMainMove()" class="hrms-btn hrms-btn-primary">
+                            <span class="hrms-btn__label">Move to Main</span>
+                        </button>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+</main>
+<th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts}"></th:block>
+<script th:src="@{/js/hrms-upload-feedback.js}"></script>
+<script th:src="@{/js/hrms-data-movement.js}"></script>
+</body>
+</html>

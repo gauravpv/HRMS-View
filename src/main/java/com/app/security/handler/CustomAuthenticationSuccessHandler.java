@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.core.oidc.user.OidcUser;
@@ -24,6 +26,8 @@ import jakarta.servlet.http.HttpServletResponse;
 @Component
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
 
+    private static final Logger logger = LogManager.getLogger(CustomAuthenticationSuccessHandler.class);
+
 	@Autowired
     private UserRepository userRepository;
 
@@ -40,36 +44,39 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
         Optional<Users> existingUser = userRepository.findByEmail(email);
         
         Timestamp timestamp = Timestamp.from(Instant.now());
-        System.out.println("Current Timestamp: " + timestamp);
-        
+
         if (existingUser.isPresent()) {
             Users userSession = existingUser.get();
             if (userSession.getIsEnabled() == 0) {
-            	if(userSession.getIsActive() == 1) {
-                    userSession.setSessionId(sessionId);
-                    System.out.println("User is active. Login allowed for: " + email);
-                    userSession.setIsActive(0);
-                    userSession.setLastLoginTime(timestamp);
-                    userRepository.save(userSession);
-                    response.sendRedirect("/");
-            	}else {
-            		response.sendRedirect("/loggedin");
-            	}
+                userSession.setSessionId(sessionId);
+                userSession.setIsActive(0);
+                userSession.setLastLoginTime(timestamp);
+                userRepository.save(userSession);
+                logger.info("Azure login successful email={} redirect=/", email);
+                response.sendRedirect("/");
             } else if(userSession.getIsEnabled() == 2) {
                 userSession.setSessionId(sessionId);
                 userRepository.save(userSession);
-                System.out.println("User is not Registered. Register User for: " + email);
-                response.sendRedirect("/notfound");  // Redirect to home or other URL
+                logger.info("Azure login pending registration email={} redirect=/not-found", email);
+                response.sendRedirect("/not-found");
             }
              else {
-                System.out.println("User is inactive. Login denied for: " + email);
-                response.sendRedirect("/error");  // Redirect to error page or custom error handling
+                logger.warn("Azure login denied inactive email={}", email);
+                response.sendRedirect("/error");
             }
         } else {
-            Users newUser = new Users(1 ,userName, "$2y$10$fvXFCSbQljs1iLBSpmNZ4exCTzy.Af.BR.xMzIGdyK6BpYs5jNI3i", email , 2 , 0, timestamp ,sessionId, roles);  // New users default to status 2
+            Users newUser = new Users();
+            newUser.setUserName(userName);
+            newUser.setPassword("$2y$10$fvXFCSbQljs1iLBSpmNZ4exCTzy.Af.BR.xMzIGdyK6BpYs5jNI3i");
+            newUser.setEmail(email);
+            newUser.setIsEnabled(2);
+            newUser.setIsActive(0);
+            newUser.setLastLoginTime(timestamp);
+            newUser.setSessionId(sessionId);
+            newUser.setRoles(roles);
             userRepository.save(newUser);
-            System.out.println("New user added to the database: " + email);
-            response.sendRedirect("/notfound");
+            logger.info("Azure login new user created email={} redirect=/not-found", email);
+            response.sendRedirect("/not-found");
         }
     }
 

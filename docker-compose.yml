@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: hrms-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: hrmsroot
+    command: >
+      --character-set-server=latin1
+      --collation-server=latin1_swedish_ci
+      --log-bin-trust-function-creators=1
+    volumes:
+      - hrms_mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-phrmsroot"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  hrms_mysql_data:

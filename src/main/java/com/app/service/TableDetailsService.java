@@ -11,4 +11,7 @@ public interface TableDetailsService {
     String checkTableExists(String tableName);
     List<String> getTempTables();
     String getColumnNames(String tableName);
+    void requireMasterTable(String tableName);
+    void requireTempTable(String tableName);
+    void requireRegisteredTable(String tableName);
 }  

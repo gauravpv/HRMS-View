@@ -1,38 +1,57 @@
 package com.app.controller;
 
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.security.Principal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.app.dto.BulkInsertResult;
+import com.app.dto.UploadIssue;
+import com.app.exception.HrmsApiException;
+import com.app.service.GeneralService;
+import com.app.support.BulkUploadMessages;
 import com.app.utility.CommonUtils;
 import com.app.utility.StringUtils;
-import com.app.dto.AjaxBody;
-import com.app.dto.AjaxError;
-import com.app.service.GeneralService;
+import com.app.web.ApiResponses;
 
-import java.util.*;
-import java.io.*;
-import java.security.Principal;
-import java.sql.Timestamp;
-import java.util.concurrent.*;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/user")
+@RequiredArgsConstructor
 public class BulkUploadController {
 
-    @Autowired
-    GeneralService genService;
-
     private static final Logger logger = LogManager.getLogger(BulkUploadController.class);
-    
+
+    private final GeneralService genService;
+
     @Value("${excel.validation}")
     private String excelValidation;
 
@@ -45,8 +64,9 @@ public class BulkUploadController {
         int errorCount;
         String status;
         String message;
-        
-        public UploadProgress(int totalRows) {
+        final List<UploadIssue> issues = new ArrayList<>();
+
+        UploadProgress(int totalRows) {
             this.totalRows = totalRows;
             this.processedRows = 0;
             this.errorCount = 0;
@@ -56,126 +76,49 @@ public class BulkUploadController {
     }
 
     @PostMapping("/addFileAsync")
-    public ResponseEntity<?> addFileAsync(@RequestParam("file") MultipartFile formData,
-            @RequestParam("tableName") String tableName, Principal principal) throws IOException {
-        
-        logger.info("Inside addFileAsync");
+    public ResponseEntity<?> addFileAsync(
+            @RequestParam("file") MultipartFile formData,
+            @RequestParam("tableName") String tableName,
+            Principal principal) throws IOException {
+
+        logger.info("addFileAsync table={} user={}", tableName, principal.getName());
         String username = principal.getName();
         String progressKey = username + "_" + tableName;
 
-        if(!StringUtils.isAlphanumericSpace(CommonUtils.customReplace(formData.getOriginalFilename(), "_.()"))){
-            AjaxError err = new AjaxError();
-            err.setErrorMsg("Error in file name format");
-            err.setTime(new Timestamp(System.currentTimeMillis()));
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
-        }
+        validateFileName(formData.getOriginalFilename());
 
-        String test = genService.checkDataExists(tableName);
-        if(!test.equals("No data")) {
-            AjaxError err = new AjaxError();
-            err.setErrorMsg(test);
-            err.setTime(new Timestamp(System.currentTimeMillis()));
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
+        String existingDataMessage = genService.checkDataExists(tableName);
+        if (!"No data".equals(existingDataMessage)) {
+            throw new HrmsApiException(existingDataMessage);
         }
-
         if (formData.isEmpty()) {
-            AjaxError err = new AjaxError();
-            err.setErrorMsg("Excel empty");
-            err.setTime(new Timestamp(System.currentTimeMillis()));
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
+            throw new HrmsApiException(BulkUploadMessages.friendlyEmptyFileError());
         }
 
-        List<String> data = new ArrayList<>();
-        try (InputStream inputStream = formData.getInputStream();
-             Reader reader = new BufferedReader(new InputStreamReader(inputStream));
-             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT)) {
-            
-            for (CSVRecord csvRecord : csvParser) {
-                StringBuilder values = new StringBuilder();
-                for (int i = 0; i < csvRecord.size(); i++) {
-                    if(csvRecord.get(i) != null ) {
-                        if (!StringUtils.isAlphanumericSpace(CommonUtils.customReplace(csvRecord.get(i), excelValidation))) {
-                            AjaxError err = new AjaxError();
-                            err.setErrorMsg("Data validation error for field: " + csvRecord.get(i) + 
-                                " in Row: " + csvRecord.getRecordNumber() + " Column: " + (i+1));
-                            err.setTime(new Timestamp(System.currentTimeMillis()));
-                            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
-                        }
-                    }
-                    if (csvRecord.get(i) == null) {
-                        values.append("default");
-                    } else {
-                        values.append(csvRecord.get(i)).append("|");
-                    }
-                }
-                data.add(values.toString());
-            }
-        } catch (Exception e) {
-            logger.error("Error parsing CSV: ", e);
-            AjaxError err = new AjaxError();
-            err.setErrorMsg("Error parsing CSV file");
-            err.setTime(new Timestamp(System.currentTimeMillis()));
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(err);
+        List<String> data = parseCsv(formData);
+        if (data.size() < 2) {
+            throw new HrmsApiException(BulkUploadMessages.friendlyEmptyFileError());
         }
 
         int totalRows = data.size() - 1;
-        logger.info("CSV parsed successfully. Total rows: " + totalRows);
+        logger.debug("CSV parsed. totalRows={}", totalRows);
 
         UploadProgress progress = new UploadProgress(totalRows);
         uploadProgressMap.put(progressKey, progress);
 
-        executorService.submit(() -> {
-            try {
-                String headers = data.get(0).substring(0, data.get(0).length()-1).replaceAll("\\|", ",");
-                
-                for(int i = 1; i < data.size(); i++) {
-                    String value = data.get(i).substring(0, data.get(i).length()-1).replaceAll("\\|", ",");
-                    String result = genService.addBulkTempData(headers, value, tableName, username);
-                    
-                    if(result.equals("Error")) {
-                        progress.errorCount++;
-                    }
-                    progress.processedRows++;
-                    
-                    if (progress.processedRows % 50 == 0) {
-                        logger.info("Progress: " + progress.processedRows + "/" + totalRows + " rows");
-                    }
-                }
-                
-                if(progress.errorCount > 0) {
-                    progress.status = "COMPLETED_WITH_ERRORS";
-                    progress.message = "Upload completed with " + progress.errorCount + " errors";
-                } else {
-                    progress.status = "COMPLETED";
-                    progress.message = "Successfully uploaded " + totalRows + " rows";
-                }
-                logger.info("Bulk upload completed for " + tableName);
-                
-            } catch (Exception e) {
-                logger.error("Error during async upload: ", e);
-                progress.status = "ERROR";
-                progress.message = "Error during upload: " + e.getMessage();
-            }
-        });
+        executorService.submit(() -> processUploadAsync(data, tableName, username, progress, totalRows));
 
-        AjaxBody result = new AjaxBody();
-        result.setMsg("Upload started. Please check progress.");
         Map<String, String> resultData = new HashMap<>();
         resultData.put("progressKey", progressKey);
         resultData.put("totalRows", String.valueOf(totalRows));
-        result.setResult(Collections.singletonList(resultData));
-        return ResponseEntity.ok(result);
+        return ApiResponses.ok("Upload started. Please check progress.", Collections.singletonList(resultData));
     }
 
     @GetMapping("/uploadProgress")
     public ResponseEntity<?> getUploadProgress(@RequestParam("progressKey") String progressKey) {
         UploadProgress progress = uploadProgressMap.get(progressKey);
-        
         if (progress == null) {
-            AjaxError err = new AjaxError();
-            err.setErrorMsg("No upload found for this key");
-            err.setTime(new Timestamp(System.currentTimeMillis()));
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(err);
+            return ApiResponses.error(HttpStatus.NOT_FOUND, "No upload found for this key");
         }
 
         Map<String, Object> progressData = new HashMap<>();
@@ -184,25 +127,136 @@ public class BulkUploadController {
         progressData.put("errorCount", progress.errorCount);
         progressData.put("status", progress.status);
         progressData.put("message", progress.message);
-        progressData.put("percentage", progress.totalRows > 0 ? 
-            (progress.processedRows * 100) / progress.totalRows : 0);
+        progressData.put("issues", progress.issues);
+        progressData.put("percentage",
+                progress.totalRows > 0 ? (progress.processedRows * 100) / progress.totalRows : 0);
 
-        AjaxBody result = new AjaxBody();
-        result.setResult(Collections.singletonList(progressData));
-        result.setMsg("Progress retrieved");
-
-        if (progress.status.equals("COMPLETED") || progress.status.equals("ERROR") || 
-            progress.status.equals("COMPLETED_WITH_ERRORS")) {
-            Timer cleanupTimer = new Timer();
-            cleanupTimer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    uploadProgressMap.remove(progressKey);
-                    logger.info("Cleaned up progress data for: " + progressKey);
-                }
-            }, 30000);
+        if ("COMPLETED".equals(progress.status)
+                || "ERROR".equals(progress.status)
+                || "COMPLETED_WITH_ERRORS".equals(progress.status)) {
+            scheduleProgressCleanup(progressKey);
         }
 
-        return ResponseEntity.ok(result);
+        return ApiResponses.ok("Progress retrieved", Collections.singletonList(progressData));
+    }
+
+    private void processUploadAsync(
+            List<String> data,
+            String tableName,
+            String username,
+            UploadProgress progress,
+            int totalRows) {
+        try {
+            String headers = data.get(0).substring(0, data.get(0).length() - 1).replace("|", ",");
+            List<String> rows = new ArrayList<>(totalRows);
+            for (int i = 1; i < data.size(); i++) {
+                rows.add(data.get(i).substring(0, data.get(i).length() - 1).replace("|", ","));
+            }
+            final int batchSize = 200;
+            final int firstDataRow = 2;
+            BulkInsertResult allErrors = new BulkInsertResult();
+            for (int start = 0; start < rows.size(); start += batchSize) {
+                int end = Math.min(start + batchSize, rows.size());
+                List<String> chunk = rows.subList(start, end);
+                BulkInsertResult batchResult = genService.addBulkTempDataBatch(
+                        headers, chunk, tableName, firstDataRow + start);
+                allErrors.merge(batchResult);
+                progress.errorCount = allErrors.getErrorCount();
+                progress.issues.clear();
+                progress.issues.addAll(allErrors.getIssues());
+                progress.processedRows = end;
+                if (logger.isDebugEnabled()
+                        && (progress.processedRows % 500 == 0 || progress.processedRows == totalRows)) {
+                    logger.debug("Upload progress {}/{} for {}", progress.processedRows, totalRows, tableName);
+                }
+            }
+            if (progress.errorCount > 0) {
+                progress.status = "COMPLETED_WITH_ERRORS";
+                int saved = totalRows - progress.errorCount;
+                progress.message = saved > 0
+                        ? "Upload finished: " + saved + " of " + totalRows + " rows saved. "
+                                + progress.errorCount + " row(s) failed — see details below."
+                        : "Upload failed: all " + progress.errorCount + " row(s) had errors — see details below.";
+            } else {
+                progress.status = "COMPLETED";
+                progress.message = "Successfully uploaded " + totalRows + " rows.";
+            }
+            logger.info("Bulk upload completed for {}", tableName);
+        } catch (HrmsApiException ex) {
+            logger.error("Upload rejected for {}", tableName, ex);
+            progress.status = "ERROR";
+            progress.message = ex.getMessage();
+            progress.issues.clear();
+            progress.issues.addAll(ex.getIssues());
+        } catch (Exception ex) {
+            logger.error("Error during async upload for {}", tableName, ex);
+            progress.status = "ERROR";
+            progress.message = "Upload stopped because of an unexpected error. Please try again or contact admin.";
+        }
+    }
+
+    private void scheduleProgressCleanup(String progressKey) {
+        Timer cleanupTimer = new Timer(true);
+        cleanupTimer.schedule(new TimerTask() {
+            @Override
+            public void run() {
+                uploadProgressMap.remove(progressKey);
+                logger.debug("Cleaned up progress data for: {}", progressKey);
+            }
+        }, 30_000);
+    }
+
+    private void validateFileName(String fileName) {
+        if (!StringUtils.isAlphanumericSpace(CommonUtils.customReplace(fileName, "_.()"))) {
+            throw new HrmsApiException(BulkUploadMessages.friendlyFileNameError());
+        }
+    }
+
+    private List<String> parseCsv(MultipartFile formData) throws IOException {
+        List<String> data = new ArrayList<>();
+        String[] headerNames = null;
+        try (InputStream inputStream = formData.getInputStream();
+                Reader reader = new BufferedReader(new InputStreamReader(inputStream));
+                CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT)) {
+            for (CSVRecord csvRecord : csvParser) {
+                long rowNum = csvRecord.getRecordNumber();
+                if (rowNum == 1) {
+                    headerNames = new String[csvRecord.size()];
+                    for (int i = 0; i < csvRecord.size(); i++) {
+                        String h = csvRecord.get(i);
+                        headerNames[i] = h != null && !h.isBlank() ? h.trim() : "Column " + (i + 1);
+                    }
+                }
+                StringBuilder values = new StringBuilder();
+                for (int i = 0; i < csvRecord.size(); i++) {
+                    String cell = csvRecord.get(i);
+                    if (cell != null
+                            && !StringUtils.isAlphanumericSpace(CommonUtils.customReplace(cell, excelValidation))) {
+                        String columnName = headerNames != null && i < headerNames.length
+                                ? headerNames[i]
+                                : "Column " + (i + 1);
+                        throw new HrmsApiException(
+                                BulkUploadMessages.validationError(rowNum, i + 1, columnName, cell),
+                                (int) rowNum,
+                                i + 1,
+                                columnName,
+                                cell);
+                    }
+                    if (cell == null) {
+                        values.append("default");
+                    } else {
+                        values.append(cell).append("|");
+                    }
+                }
+                data.add(values.toString());
+            }
+        } catch (HrmsApiException ex) {
+            throw ex;
+        } catch (Exception ex) {
+            logger.error("CSV parsing failed", ex);
+            throw new HrmsApiException(
+                    "Could not read the CSV file. Save as .csv (UTF-8), check commas and quotes, then try again.");
+        }
+        return data;
     }
 }

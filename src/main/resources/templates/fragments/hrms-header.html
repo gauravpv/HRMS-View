@@ -1,0 +1,16 @@
+<header th:fragment="hrmsHeader(pageTitle)" xmlns:th="http://www.thymeleaf.org"
+        id="hrms-header"
+        class="fixed top-0 right-0 left-[260px] h-16 flex justify-between items-center px-lg bg-surface-container-lowest border-b border-outline-variant z-40">
+    <div class="flex items-center gap-md">
+        <button type="button" id="sidebar-toggle" class="p-sm hover:bg-surface-container-low rounded-full transition-colors lg:hidden" aria-label="Menu">
+            <span class="material-symbols-outlined text-primary">menu</span>
+        </button>
+        <h2 class="font-title-lg text-title-lg text-primary" th:text="${pageTitle}">Page</h2>
+    </div>
+    <div class="hrms-header-profile" th:with="displayName=${session.userName} ?: 'User'">
+        <div class="hrms-header-avatar" aria-hidden="true">
+            <span class="material-symbols-outlined">person</span>
+        </div>
+        <span class="hrms-header-username" th:text="${displayName}" th:title="${displayName}">User</span>
+    </div>
+</header>

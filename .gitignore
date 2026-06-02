@@ -1,4 +1,5 @@
 HELP.md
+logs/
 target/
 !.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
@@ -31,3 +32,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Local / environment-specific config (credentials) ###
+src/main/resources/application-mysql.properties
+src/main/resources/application-local-mysql.properties
+Dump*/

@@ -1,28 +1,86 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html class="light" lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Login</title>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Login | HRMS Core</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <script id="tailwind-config" th:src="@{/js/hrms-tailwind-config.js}"></script>
+    <link rel="stylesheet" th:href="@{/css/hrms-design-tokens.css}"/>
+    <link rel="stylesheet" th:href="@{/css/hrms-layout.css}"/>
+    <style>
+        body {
+            background-color: var(--hrms-background);
+            background-image: radial-gradient(#00336611 1px, transparent 1px);
+            background-size: 24px 24px;
+            min-height: 100dvh;
+            color: var(--hrms-on-surface);
+        }
+        .material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+        .glass-card { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
+    </style>
 </head>
-<body>
-    <h1>Login</h1>
-    <form th:action="@{/login}" method="post">
-        <div>
-            <label>Username:</label>
-            <input type="text" name="username"/>
+<body class="min-h-screen flex flex-col font-sans font-body-md text-on-surface">
+<header class="fixed top-0 left-0 w-full z-50 flex items-center px-lg h-16 bg-surface-container-lowest border-b border-outline-variant">
+    <div class="flex items-center gap-sm">
+        <span class="material-symbols-outlined text-primary">security</span>
+        <span class="font-headline-md font-bold text-primary">HRMS Core</span>
+    </div>
+</header>
+
+<main class="flex-grow flex items-center justify-center px-gutter pt-24 pb-32">
+    <div class="w-full max-w-[440px]">
+        <div class="bg-surface-container-lowest border border-outline-variant p-lg lg:p-xl glass-card">
+            <div class="flex flex-col items-center mb-xl">
+                <div class="w-12 h-12 bg-primary-container rounded-lg flex items-center justify-center mb-md">
+                    <span class="material-symbols-outlined text-on-primary-fixed" style="font-variation-settings:'FILL' 1">security</span>
+                </div>
+                <h1 class="font-headline-md text-primary text-center">HRMS Core</h1>
+                <p class="font-body-sm text-on-surface-variant mt-xs text-center">Corporate Integrity System Access</p>
+            </div>
+
+            <div th:if="${param.error}" class="mb-md p-md bg-error-container/30 border border-error text-error font-body-sm rounded">
+                Invalid username or password.
+            </div>
+            <div th:if="${param.logout}" class="mb-md p-md bg-secondary-container/20 text-on-secondary-container font-body-sm rounded">
+                You have been signed out.
+            </div>
+
+            <div th:if="${azureEnabled}">
+                <a th:href="@{/oauth2/authorization/azure}" class="w-full h-[48px] bg-primary-container text-on-primary font-title-lg flex items-center justify-center hover:bg-primary transition-colors">
+                    Sign in with Microsoft
+                </a>
+            </div>
+
+            <form th:if="${!azureEnabled}" th:action="@{/login}" method="post" class="space-y-lg">
+                <div class="space-y-xs">
+                    <label class="font-label-md text-on-surface-variant" for="username">Username or email</label>
+                    <input class="w-full h-[40px] px-md border border-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none bg-surface-container-lowest"
+                           id="username" name="username" placeholder="e.g. Gaurav Pampana or you@company.com" type="text" required autocomplete="username"/>
+                    <p class="font-label-sm text-on-surface-variant">Use your HRMS display name or corporate email. Password is case-sensitive.</p>
+                </div>
+                <div class="space-y-xs">
+                    <label class="font-label-md text-on-surface-variant" for="password">Password</label>
+                    <input class="w-full h-[40px] px-md border border-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none bg-surface-container-lowest"
+                           id="password" name="password" placeholder="••••••••" type="password" required autocomplete="current-password"/>
+                </div>
+                <button class="w-full h-[48px] bg-primary-container text-on-primary font-title-lg hover:bg-primary transition-colors" type="submit">
+                    Sign In
+                </button>
+            </form>
         </div>
-        <div>
-            <label>Password:</label>
-            <input type="password" name="password"/>
+        <div class="mt-lg flex justify-between items-center opacity-60">
+            <div class="h-1 w-12 bg-outline-variant"></div>
+            <div class="font-label-sm text-on-tertiary-fixed-variant tracking-widest uppercase">Verified Access Only</div>
+            <div class="h-1 w-12 bg-outline-variant"></div>
         </div>
-        <div>
-            <button type="submit">Login</button>
-        </div>
-        <div th:if="${param.error}">
-            Invalid username or password.
-        </div>
-        <div th:if="${param.logout}">
-            You have been logged out.
-        </div>
-    </form>
+    </div>
+</main>
+
+<footer class="fixed bottom-0 left-0 w-full z-50 flex flex-col md:flex-row justify-between items-center px-lg py-md gap-sm bg-surface-container-lowest border-t border-outline-variant">
+    <span class="font-body-sm text-on-surface-variant">© 2024 HRMS Core. Corporate Integrity System.</span>
+</footer>
 </body>
 </html>

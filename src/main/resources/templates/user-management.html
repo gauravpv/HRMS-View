@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('User Management')}"></head>
+<body class="font-sans bg-background text-on-surface hrms-user-page">
+<th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('user-management')}"></th:block>
+<main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
+    <th:block th:replace="~{fragments/hrms-header :: hrmsHeader('User Management')}"></th:block>
+    <div class="hrms-page-canvas flex-1">
+        <section class="hrms-data-toolbar hrms-user-overview" aria-label="Overview and filters">
+            <div class="hrms-data-toolbar__main hrms-data-toolbar__main--user">
+                <div class="hrms-user-metrics" aria-label="Account summary">
+                    <div class="hrms-user-metric hrms-user-metric--total">
+                        <div class="hrms-user-metric__icon-wrap" aria-hidden="true">
+                            <span class="material-symbols-outlined hrms-user-metric__icon">groups</span>
+                        </div>
+                        <div class="hrms-user-metric__body">
+                            <span class="hrms-user-metric__label">Total users</span>
+                            <span class="hrms-user-metric__value" th:text="${totalUsers}">0</span>
+                        </div>
+                    </div>
+                    <div class="hrms-user-metric hrms-user-metric--active">
+                        <div class="hrms-user-metric__icon-wrap" aria-hidden="true">
+                            <span class="material-symbols-outlined hrms-user-metric__icon">verified_user</span>
+                        </div>
+                        <div class="hrms-user-metric__body">
+                            <span class="hrms-user-metric__label">Active</span>
+                            <span class="hrms-user-metric__value" th:text="${activeEnabled}">0</span>
+                        </div>
+                    </div>
+                    <div class="hrms-user-metric hrms-user-metric--online">
+                        <div class="hrms-user-metric__icon-wrap" aria-hidden="true">
+                            <span class="material-symbols-outlined hrms-user-metric__icon">sensors</span>
+                        </div>
+                        <div class="hrms-user-metric__body">
+                            <span class="hrms-user-metric__label">Signed in now</span>
+                            <span class="hrms-user-metric__value" th:text="${activeNow}">0</span>
+                        </div>
+                    </div>
+                    <div class="hrms-user-metric hrms-user-metric--inactive">
+                        <div class="hrms-user-metric__icon-wrap" aria-hidden="true">
+                            <span class="material-symbols-outlined hrms-user-metric__icon">person_off</span>
+                        </div>
+                        <div class="hrms-user-metric__body">
+                            <span class="hrms-user-metric__label">Inactive</span>
+                            <span class="hrms-user-metric__value" th:text="${inactiveEnabled}">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hrms-user-toolbar-filter" aria-label="Filter users">
+                    <div class="hrms-field hrms-user-filter-field">
+                        <label for="user-status-filter">Show</label>
+                        <div class="hrms-select-wrap">
+                            <span class="material-symbols-outlined hrms-select-leading">filter_list</span>
+                            <select id="user-status-filter" class="hrms-select">
+                                <option value="all" th:selected="${status == 'all'}">All users</option>
+                                <option value="active" th:selected="${status == 'active'}">Active</option>
+                                <option value="inactive" th:selected="${status == 'inactive'}">Inactive</option>
+                            </select>
+                            <span class="material-symbols-outlined hrms-select-chevron">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p th:if="${msg}" class="hrms-user-flash" role="status">
+                <span class="material-symbols-outlined" aria-hidden="true">info</span>
+                <span th:text="${msg}">Message</span>
+            </p>
+        </section>
+
+        <section class="hrms-data-results hrms-user-directory" aria-label="User directory">
+            <div class="hrms-results-block">
+                <div class="hrms-results-header hrms-user-directory__header">
+                    <h3><span class="material-symbols-outlined text-secondary text-[22px]">group</span> User directory</h3>
+                    <div class="hrms-results-header__meta">
+                        <span class="hrms-badge hrms-user-directory__badge" th:text="|${#lists.size(userRows)} accounts|">0 accounts</span>
+                    </div>
+                </div>
+
+                <div th:if="${#lists.isEmpty(userRows)}" class="hrms-empty-state is-visible hrms-user-directory__empty">
+                    <div class="hrms-empty-state-icon"><span class="material-symbols-outlined">person_search</span></div>
+                    <p class="font-headline-sm text-primary mb-xs">No users found</p>
+                    <p class="font-body-sm text-on-surface-variant hrms-empty-detail">Try another filter or check back later.</p>
+                </div>
+
+                <div th:if="${!#lists.isEmpty(userRows)}" class="hrms-table-shell hrms-user-table-shell data-table-container hrms-user-directory__table">
+                    <table id="usersTable" class="hrms-user-table w-full hrms-data-table display stripe">
+                        <thead>
+                        <tr>
+                            <th>User details</th>
+                            <th>Role</th>
+                            <th>Status</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr th:each="row : ${userRows}" class="hrms-user-row">
+                            <td>
+                                <div class="hrms-user-cell">
+                                    <div class="hrms-user-avatar"
+                                         th:text="${row.user.userName != null and !#strings.isEmpty(row.user.userName) ? #strings.substring(row.user.userName,0,1).toUpperCase() : '?'}">U</div>
+                                    <div class="hrms-user-meta">
+                                        <span class="hrms-user-name" th:text="${row.user.userName}">user</span>
+                                        <span class="hrms-user-email" th:text="${row.user.email}">email</span>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="hrms-role-pill" th:classappend="${' ' + row.roleCssClass}" th:text="${row.roleName}">USER</span>
+                            </td>
+                            <td>
+                                <span th:if="${row.user.isEnabled == 0}" class="hrms-user-status hrms-user-status--active">
+                                    <span class="hrms-user-status-dot"></span> Active
+                                </span>
+                                <span th:if="${row.user.isEnabled == 1}" class="hrms-user-status hrms-user-status--inactive">
+                                    <span class="hrms-user-status-dot"></span> Inactive
+                                </span>
+                            </td>
+                            <td class="text-right">
+                                <a th:if="${row.user.isEnabled == 0}"
+                                   th:href="@{/deactivate(id=${row.user.userId})}"
+                                   class="hrms-user-action hrms-user-action--danger"
+                                   onclick="return confirm('Deactivate this user?');"
+                                   title="Deactivate">
+                                    <span class="material-symbols-outlined">block</span>
+                                    <span class="hrms-user-action-label">Deactivate</span>
+                                </a>
+                                <a th:if="${row.user.isEnabled == 1}"
+                                   th:href="@{/activate(id=${row.user.userId})}"
+                                   class="hrms-user-action hrms-user-action--primary"
+                                   title="Activate">
+                                    <span class="material-symbols-outlined">check_circle</span>
+                                    <span class="hrms-user-action-label">Activate</span>
+                                </a>
+                            </td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+<th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts}"></th:block>
+<script th:src="@{/js/hrms-user-management.js}"></script>
+</body>
+</html>

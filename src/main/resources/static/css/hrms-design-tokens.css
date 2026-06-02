@@ -1,0 +1,54 @@
+/* Design tokens from newFrontend.html */
+:root {
+    --hrms-font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+        'Helvetica Neue', Arial, sans-serif;
+    --hrms-tertiary: #181f25;
+    --hrms-surface-container-low: #f1f4f6;
+    --hrms-error: #ba1a1a;
+    --hrms-secondary-fixed: #d6e3ff;
+    --hrms-on-surface-variant: #43474f;
+    --hrms-primary-container: #003366;
+    --hrms-on-primary-fixed: #001b3c;
+    --hrms-on-secondary-container: #003d7a;
+    --hrms-on-surface: #181c1e;
+    --hrms-on-tertiary: #ffffff;
+    --hrms-outline: #737780;
+    --hrms-error-container: #ffdad6;
+    --hrms-primary-fixed-dim: #a7c8ff;
+    --hrms-surface-variant: #e0e3e5;
+    --hrms-on-error: #ffffff;
+    --hrms-surface-container-highest: #e0e3e5;
+    --hrms-outline-variant: #c3c6d1;
+    --hrms-secondary: #1f5eac;
+    --hrms-background: #f7fafc;
+    --hrms-on-primary: #ffffff;
+    --hrms-on-primary-container: #799dd6;
+    --hrms-tertiary-container: #2d343a;
+    --hrms-on-secondary: #ffffff;
+    --hrms-tertiary-fixed-dim: #c0c7cf;
+    --hrms-tertiary-fixed: #dce3eb;
+    --hrms-on-tertiary-fixed-variant: #40484e;
+    --hrms-surface-container: #ebeef0;
+    --hrms-inverse-on-surface: #eef1f3;
+    --hrms-primary-fixed: #d5e3ff;
+    --hrms-surface: #f7fafc;
+    --hrms-on-secondary-fixed: #001b3d;
+    --hrms-surface-tint: #3a5f94;
+    --hrms-on-primary-fixed-variant: #1f477b;
+    --hrms-on-tertiary-fixed: #151c22;
+    --hrms-secondary-container: #75a9fd;
+    --hrms-on-tertiary-container: #959ca4;
+    --hrms-secondary-fixed-dim: #a9c7ff;
+    --hrms-inverse-primary: #a7c8ff;
+    --hrms-surface-container-lowest: #ffffff;
+    --hrms-surface-container-high: #e5e9eb;
+    --hrms-on-secondary-fixed-variant: #00468b;
+    --hrms-surface-dim: #d7dadc;
+    --hrms-on-background: #181c1e;
+    --hrms-on-error-container: #93000a;
+    --hrms-surface-bright: #f7fafc;
+    --hrms-primary: #001e40;
+    --hrms-inverse-surface: #2d3133;
+    --hrms-glass-border: #e2e8f0;
+    --hrms-scrollbar: #cbd5e0;
+}

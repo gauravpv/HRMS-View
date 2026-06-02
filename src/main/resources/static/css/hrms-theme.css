@@ -1,0 +1,287 @@
+/* Modals — full viewport overlay (Bootstrap CSS not loaded in hrms-head) */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 1050;
+    width: 100%;
+    height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+    outline: 0;
+    padding: 0 0.5rem;
+}
+.modal.show {
+    display: block;
+}
+.modal-open {
+    overflow: hidden;
+}
+.modal-open .modal {
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 30, 64, 0.45);
+    z-index: 1040;
+}
+.modal-backdrop.fade {
+    opacity: 0;
+}
+.modal-backdrop.show {
+    opacity: 1;
+}
+.modal-dialog {
+    position: relative;
+    width: auto;
+    margin: 1.75rem auto;
+    max-width: 500px;
+    pointer-events: none;
+}
+.modal-dialog-centered {
+    display: flex;
+    align-items: center;
+    min-height: calc(100% - 3.5rem);
+}
+.modal.fade .modal-dialog {
+    transition: transform 0.2s ease-out;
+    transform: translate(0, -24px);
+}
+.modal.show .modal-dialog {
+    transform: none;
+}
+.modal-content {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    pointer-events: auto;
+    background: var(--hrms-surface-container-lowest);
+    border: 1px solid var(--hrms-outline-variant);
+    border-radius: 0.5rem;
+    box-shadow: 0 25px 50px -12px rgba(0, 30, 64, 0.25);
+}
+.modal-header,
+.modal-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    border-color: var(--hrms-outline-variant);
+}
+.modal-header { border-bottom: 1px solid var(--hrms-outline-variant); }
+.modal-footer { border-top: 1px solid var(--hrms-outline-variant); gap: 0.5rem; }
+.modal-body { padding: 1.25rem; color: var(--hrms-on-surface); }
+.modal-title {
+    font-weight: 600;
+    color: var(--hrms-primary);
+    margin: 0;
+}
+.close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    opacity: 0.6;
+    color: var(--hrms-on-surface-variant);
+}
+.hrms-btn {
+    padding: 0.5rem 1rem;
+    border-radius: 0.25rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+}
+.hrms-btn-primary {
+    background: var(--hrms-primary-container);
+    color: var(--hrms-on-primary);
+}
+.hrms-btn-secondary {
+    background: var(--hrms-surface-container-high);
+    color: var(--hrms-on-surface);
+}
+.hrms-btn-success {
+    background: var(--hrms-secondary);
+    color: var(--hrms-on-secondary);
+}
+.progress {
+    height: 1.5rem;
+    background: var(--hrms-surface-container);
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+.progress-bar {
+    height: 100%;
+    background: var(--hrms-secondary);
+    transition: width 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--hrms-on-secondary);
+    font-size: 0.75rem;
+}
+.alert-info {
+    background: var(--hrms-secondary-fixed);
+    color: var(--hrms-on-secondary-container);
+    padding: 0.75rem;
+    border-radius: 0.25rem;
+}
+#loader .modal-dialog { max-width: 120px; }
+#loader .modal-body { text-align: center; padding: 2rem; }
+
+.hrms-modal--error .modal-header {
+    border-bottom-color: rgba(186, 26, 26, 0.25);
+}
+.hrms-modal--error .modal-title {
+    color: var(--hrms-error);
+}
+.hrms-modal--success .modal-title {
+    color: var(--hrms-secondary);
+}
+.hrms-upload-result-summary {
+    margin: 0 0 0.75rem;
+    line-height: 1.5;
+}
+.hrms-upload-issues {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    list-style: none;
+    max-height: 14rem;
+    overflow-y: auto;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(186, 26, 26, 0.2);
+    background: rgba(186, 26, 26, 0.04);
+}
+.hrms-upload-issues li {
+    font-size: 0.8125rem;
+    line-height: 1.45;
+    color: var(--hrms-on-surface);
+    padding: 0.35rem 0;
+    border-bottom: 1px solid rgba(0, 30, 64, 0.06);
+}
+.hrms-upload-issues li:last-child {
+    border-bottom: none;
+}
+.hrms-upload-result-more {
+    margin: 0.75rem 0 0;
+    font-size: 0.75rem;
+    color: var(--hrms-on-surface-variant);
+}
+
+.hrms-upload-steps {
+    list-style: none;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+.hrms-upload-step {
+    display: flex;
+    align-items: center;
+    gap: 0.625rem;
+    font-size: 0.9375rem;
+    color: var(--hrms-on-surface-variant);
+}
+.hrms-upload-step-icon {
+    font-size: 1.375rem;
+    flex-shrink: 0;
+}
+.hrms-upload-step.is-pending .hrms-upload-step-icon {
+    color: var(--hrms-outline);
+}
+.hrms-upload-step.is-active {
+    color: var(--hrms-on-surface);
+    font-weight: 500;
+}
+.hrms-upload-step.is-active .hrms-upload-step-icon {
+    color: var(--hrms-secondary);
+    animation: hrms-upload-spin 1s linear infinite;
+}
+.hrms-upload-step.is-done {
+    color: var(--hrms-on-surface);
+}
+.hrms-upload-step.is-done .hrms-upload-step-icon {
+    color: var(--hrms-secondary);
+    animation: none;
+}
+.hrms-upload-step.is-error .hrms-upload-step-icon {
+    color: var(--hrms-error);
+}
+@keyframes hrms-upload-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+.required::after { content: " *"; color: var(--hrms-error); }
+
+/* DataTables — replace Bootstrap blue */
+.dataTables_wrapper {
+    font-size: 0.875rem;
+    color: var(--hrms-on-surface);
+}
+table.dataTable {
+    width: 100% !important;
+    border-collapse: collapse !important;
+}
+table.dataTable thead th,
+table.dataTable thead td {
+    background: var(--hrms-surface-container-low) !important;
+    color: var(--hrms-on-surface-variant) !important;
+    border-bottom: 1px solid var(--hrms-outline-variant) !important;
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+table.dataTable tbody tr {
+    background: var(--hrms-surface-container-lowest) !important;
+}
+table.dataTable tbody tr:hover {
+    background: var(--hrms-surface-container-low) !important;
+}
+table.dataTable tbody td {
+    border-color: var(--hrms-outline-variant) !important;
+    color: var(--hrms-on-surface);
+}
+table.dataTable.stripe tbody tr.odd,
+table.dataTable.display tbody tr.odd {
+    background: var(--hrms-surface-container-lowest) !important;
+}
+table.dataTable.stripe tbody tr.even,
+table.dataTable.display tbody tr.even {
+    background: var(--hrms-surface-bright) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+    color: var(--hrms-on-surface-variant) !important;
+    border: 1px solid var(--hrms-outline-variant) !important;
+    background: var(--hrms-surface-container-lowest) !important;
+    border-radius: 0.25rem !important;
+    margin: 0 2px;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+    background: var(--hrms-primary-container) !important;
+    border-color: var(--hrms-primary-container) !important;
+    color: var(--hrms-on-primary) !important;
+}
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+    background: var(--hrms-surface-container-low) !important;
+    border-color: var(--hrms-secondary) !important;
+    color: var(--hrms-primary) !important;
+}
+.dataTables_wrapper .dataTables_length select,
+.dataTables_wrapper .dataTables_filter input {
+    border: 1px solid var(--hrms-outline-variant) !important;
+    border-radius: 0.25rem;
+    color: var(--hrms-on-surface);
+    background: var(--hrms-surface-container-lowest);
+}
+.dataTables_wrapper .dataTables_info {
+    color: var(--hrms-on-surface-variant) !important;
+}
+a { color: var(--hrms-secondary); }
+a:hover { color: var(--hrms-on-secondary-fixed-variant); }

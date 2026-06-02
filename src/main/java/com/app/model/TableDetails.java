@@ -10,7 +10,7 @@ import lombok.Data;
 
 @Entity
 @Data
-@Table(name="TABLE_DETAILS")
+@Table(catalog = "decision_rules_hrmsbre", name = "table_details")
 public class TableDetails {
 	
 	@Id

@@ -1,0 +1,78 @@
+<th:block th:fragment="hrmsModals" xmlns:th="http://www.thymeleaf.org">
+    <div class="modal fade" id="loader" tabindex="-1" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center py-4">
+                    <img th:src="@{/img/loading.gif}" alt="Loading" class="mx-auto"/>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="exampleModalCenter" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Confirm</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body font-body-md" id="message"></div>
+                <div class="modal-footer">
+                    <button type="button" class="hrms-btn hrms-btn-primary" id="accept-change">Accept</button>
+                    <button type="button" class="hrms-btn hrms-btn-outline" id="reject-change" data-dismiss="modal">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="successModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="upload-result-title">Message</h5>
+                    <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                </div>
+                <div class="modal-body font-body-md">
+                    <p id="msg" class="hrms-upload-result-summary"></p>
+                    <ul id="upload-result-issues" class="hrms-upload-issues hidden" role="list"></ul>
+                    <p id="upload-result-more" class="hrms-upload-result-more hidden"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="hrms-btn hrms-btn-primary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="upload-progress-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Upload Progress</h5>
+                </div>
+                <div class="modal-body">
+                    <ul id="upload-phase-steps" class="hrms-upload-steps hidden" aria-label="Pre-upload steps">
+                        <li id="step-truncate" class="hrms-upload-step is-pending">
+                            <span class="material-symbols-outlined hrms-upload-step-icon" aria-hidden="true">radio_button_unchecked</span>
+                            <span class="hrms-upload-step-label">Table truncated</span>
+                        </li>
+                        <li id="step-history" class="hrms-upload-step is-pending">
+                            <span class="material-symbols-outlined hrms-upload-step-icon" aria-hidden="true">radio_button_unchecked</span>
+                            <span class="hrms-upload-step-label">Moved to history</span>
+                        </li>
+                    </ul>
+                    <div id="upload-phase-progress">
+                        <p class="font-body-md text-on-surface-variant mb-md">Uploading data, please wait…</p>
+                        <div class="progress">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar"
+                                 role="progressbar" style="width: 0%"><span id="progress-percentage">0</span>%</div>
+                        </div>
+                        <p class="mt-3 font-body-sm text-on-surface-variant">
+                            Processed: <span id="progress-processed">0</span> / <span id="progress-total">0</span> rows
+                        </p>
+                    </div>
+                    <div class="alert-info mt-3">
+                        <small>Do not close this window until the upload completes.</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</th:block>

@@ -1,0 +1,38 @@
+<!-- Upload Progress Modal -->
+<div class="modal fade" id="upload-progress-modal" tabindex="-1" role="dialog" aria-labelledby="progressModalTitle" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="progressModalTitle">Upload Progress</h5>
+            </div>
+            <div class="modal-body">
+		            <div class="d-flex justify-content-center mb-3">
+		    <div class="spinner-border text-primary" role="status">
+		        <span class="sr-only">Loading...</span>
+		    </div>
+		</div>
+                <p>Uploading data, please wait...</p>
+                <div class="progress" style="height: 25px;">
+                    <div class="progress-bar progress-bar-striped progress-bar-animated" id="progress-bar" role="progressbar" 
+                         aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width: 0%">
+                        <span id="progress-percentage">0</span>%
+                    </div>
+                </div>
+                <p class="mt-3">
+                    Processed: <span id="progress-processed">0</span> / <span id="progress-total">0</span> rows
+                </p>
+                <div class="alert alert-info mt-2" role="alert">
+                    <small>This may take several minutes for large files. Please do not close this window.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script>
+// Override the sendFile function to use async upload
+function sendFile() {
+    sendFileWithProgress();
+}
+</script>

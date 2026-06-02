@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Custom OAuth Login</title>
+</head>
+<body>
+    <h1>Login</h1>
+    <form th:action="@{/oauth2/authorization/azure}" method="get">
+		<a href="/oauth2/authorization/google">Google</a>
+        <button type="submit">Login with Azure AD</button>
+    </form>
+</body>
+</html>

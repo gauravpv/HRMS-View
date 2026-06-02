@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>Bajaj Admin</title>
+
+    <!-- Custom fonts for this template -->
+    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+
+    <script src="js/jquery361.js" type="text/javascript"></script>
+
+    <!-- Custom styles for this template -->
+    <link href="css/sb-admin-2.min.css" rel="stylesheet">
+
+    <!-- Custom styles for this page -->
+    <!-- <link href="vendor/datatables/dataTables.bootstrap4.min.css"
+	rel="stylesheet"> -->
+    <link rel="stylesheet" href="css/jsdelivr.css" type="text/css">
+
+</head>
+
+<style>
+    .required:after {
+    	content: " *";
+    	color: red;
+    }
+    
+    #no-data-message {
+      display: none; /* Hide the message initially */
+      text-align: center;
+      padding: 20px;
+      background-color: #f2f2f2;
+      border: 1px solid #ddd;
+      margin-top: 20px;
+    }
+</style>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar" th:insert="SideBar::SideBar"></ul>
+        <!-- End of Sidebar -->
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+                <!-- Topbar -->
+                <section th:insert="Navbar::Navbar"></section>
+                <!-- End of Topbar -->
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+
+
+
+
+                    <div class="row">
+
+                        <div class="col-lg-8">
+
+                            <div class="p-3">
+
+                                <div class="text-center">
+                                    <h1 class="h4 text-gray-900 mb-4">Search Data</h1>
+                                </div>
+                                <form>
+                                    <div class="form-group row">
+                                        <div class="col-sm-5 ">
+                                            <label>Table Type</label>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <div class="form-group">
+                                                <select class="form-select form-select-sm" id="tableTemp" style="width: 100%; height: 37px" name="tableTemp" aria-label=".form-select-sm example" onchange="getTable()">
+                                                    <option selected>--Select--</option>
+                                                    <option value="temp"> Temp </option>
+                                                    <option value="master"> Master </option>
+                                                </select> <small class="form-text text-danger ml-2 tab-name-msg"></small>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group row">
+                                        <div class="col-sm-5 ">
+                                            <label> Table Name</label>
+                                        </div>
+                                        <div class="col-sm-4">
+                                            <div class="form-group">
+                                                <select class="form-select form-select-sm" id="tableName" style="width: 100%; height: 37px" name="tableName" aria-label=".form-select-sm example">
+                                                    <option selected>--Select--</option>
+                                                    <!-- 	<option th:each="get : ${tabList}" th:value="${get}"
+														th:text="${#strings.replace(get,'_master','')}"></option>  -->
+                                                </select> <small class="form-text text-danger ml-2 tab-name-msg"></small>
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+
+
+                                    <script th:inline="javascript">
+                                        var tabList = /*[[${tabList}]]*/ [];
+                                        									var tabTempList = /*[[${tabTempList}]]*/ [];
+                                        									var tableData = []
+                                        									const secret = 'my secret key';
+                                        									
+                                        									function getTable(){
+                                        										
+                                        										console.log("Entered Get Table");
+                                        										$("#loader").modal('show');
+                                        										const tableTemp = $("#tableTemp").val();
+                                        										$('#tableName').empty();
+                                        										if(tableTemp === 'temp'){
+                                        											console.log("Entered Temp");
+                                        											$.each(tabTempList, function(index, value) {
+                                        							                    $('#tableName').append('<option value="' + value + '">' + value.replace('_temp', '') + '</option>');
+                                        							                });
+                                        										}else if (tableTemp === 'master') {
+                                        											console.log("Entered Master");
+                                        											$.each(tabList, function(index, value) {
+                                        							                    $('#tableName').append('<option value="' + value + '">' + value.replace('_master', '') + '</option>');
+                                        							                });
+                                        										}
+                                        										$("#loader").modal('hide')
+                                        									}
+                                        												
+                                        							function search() {
+                                        							    $("#loader").modal('show');
+                                        							    var tableName = $("#tableName").val();
+                                        							    console.log(tableName);
+                                        							    $.ajax({
+                                        							        type: "GET",
+                                        							        contentType: "application/json",
+                                        							        url: "/api/user/searchTableData?tabName=" + tableName,
+                                        							        dataType: "json",
+                                        							        cache: false,
+                                        							        timeout: 600000,
+                                        							        success: function(data) {
+                                        							            $("#loader").modal('hide');
+                                        							            if (data && data.result && data.result.length > 0) { // Check if data.result is valid
+                                        							            	tableData = data.result
+                                        							                const columns = [];
+                                        							                const keys = Object.keys(data.result[0]);
+                                        
+                                        							                // Destroy existing DataTable instance, if it exists
+                                        							                const dataTable = $("#dataTable").DataTable();
+                                        							                if (dataTable) {
+                                        							                    dataTable.clear().destroy();
+                                        							                }
+                                        
+                                        							                // Remove existing columns
+                                        							                $("#dataTable thead tr").empty();
+                                        
+                                        							                // Add header row with column titles
+                                        							                for (let i = 0; i < keys.length; i++) {
+                                        							                    $("#dataTable thead tr").append("<th>" + keys[i] + "</th>");
+                                        							                    columns.push({
+                                        							                        data: keys[i],
+                                        							                        title: keys[i],
+                                        							                    });
+                                        							                }
+                                        
+                                        							                // Reinitialize DataTable
+                                        							                const dataTableOptions = {
+                                        							                    data: data.result,
+                                        							                    columns: columns,
+                                        							                    responsive: true,
+                                        							                    deferRender: true,
+                                        							                    scrollCollapse: true,
+                                        							                    paging: true
+                                        							                };
+                                        							                $("#dataTable").DataTable(dataTableOptions);
+                                        
+                                        							                $("#table-div").css("visibility", "visible");
+                                        							                $("#no-data-message").hide(); 
+                                        							            } else {
+                                        							                
+                                        							                $("#no-data-message").show();
+                                        							            }
+                                        							        },
+                                        							        error: function(e) {
+                                        							            $("#loader").modal('hide');
+                                        							            
+                                        							        },
+                                        							    });
+                                        							}
+                                        		
+                                        										
+                                        										function tableToCsv() {
+                                        											//define the heading for each row of the data 
+                                        											const tableName = $("#tableName").val()
+                                        											var csvFileData = [];
+                                        											const keys = Object.keys(tableData[0])
+                                        											tableData.forEach(function(item){
+                                        												var data = []
+                                        												for(var key in keys){
+                                        													data.push(item[keys[key]])
+                                        												}
+                                        												csvFileData.push(data)
+                                        											})
+                                        											var csv = ""
+                                        											for(var i=0;i<keys.length;i++){
+                                        												if(i == keys.length -1 )
+                                        													csv += keys[i] + "\n"
+                                        												else
+                                        													csv += keys[i] + ","
+                                        											}
+                                        											//merge the data with CSV  
+                                        											csvFileData.forEach(function(row) {
+                                        												csv += row.join(',');
+                                        												csv += "\n";
+                                        											});
+                                        
+                                        											//display the created CSV data on the web browser   document.write(csv);
+                                        											var hiddenElement = document
+                                        													.createElement('a');
+                                        											hiddenElement.href = 'data:text/csv;charset=utf-8,'
+                                        													+ encodeURI(csv);
+                                        
+                                        											//provide the name for the CSV file to be downloaded  
+                                        											hiddenElement.download = tableName + '.csv';
+                                        											hiddenElement.click(); 
+                                        										}
+                                    </script>
+                                    <button type="button" class="btn btn-primary" onclick="search()">Search</button>
+
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="no-data-message" style="display: none;">No data in Table.</div>
+                    <!-- Page Heading -->
+
+
+                </div>
+                <!-- /.container-fluid -->
+                <div style="visibility: hidden" id='table-div' class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped hidden" id="dataTable" width="100%" cellspacing="0">
+
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            </tbody>
+
+                        </table>
+                    </div>
+                    <button onclick="tableToCsv()" class="btn btn-info mt-3">Export to CSV</button>
+                </div>
+            </div>
+            <!-- End of Main Content -->
+            <!-- Footer -->
+            <footer class="sticky-footer bg-white" th:insert="Footer::Footer">
+            </footer>
+            <!-- End of Footer -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top"> <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Loading Modal -->
+
+    <div class="modal" id="loader" tabindex="-1" role="dialog" aria-labelledby="loaderTitle" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <!-- <div class="modal-content"> -->
+            <div class="modal-body">
+                <img src="../static/img/loading.gif" class="center" th:src="@{img/loading.gif}"></img>
+            </div>
+            <!-- </div> -->
+        </div>
+    </div>
+
+    <input type="hidden" th:value="${message}" id="checkMsg">
+    <!-- Message Modal-->
+    <div class="modal fade" id="exampleModalCenter" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLongTitle">Message</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="message"></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- End of Message Modal-->
+
+    <!-- Logout Modal-->
+    <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Ready to Leave?</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <div class="modal-body">Select "Logout" to end your current session.
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancel</button>
+                    <a class="btn btn-primary" href="logout">Logout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="profileModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="exampleModalLabel">Profile</h5>
+                    <button class="close" type="button" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">×</span>
+                    </button>
+                </div>
+                <!-- <div class="modal-body">Profile Info</div> -->
+                <div class="modal-body mx-3">
+                    <div class="md-form mb-4">
+                        User Name :=
+                        <h6 th:text="${session.userName}"></h6>
+                    </div>
+
+                    <div class="md-form mb-4">
+                        <label>Email :=
+                            <h6 th:text="${session.email}"></h6>
+                        </label>
+
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-primary" type="button" data-dismiss="modal">Back</button>
+                    <!-- <a class="btn btn-primary" href="logout">Logout</a> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <script type="text/javascript">
+        function myFunction() {
+        
+        			var x = document.getElementById("myDIV");
+        			if (x.style.display === "none") {
+        				x.style.display = "";
+        			} else {
+        				x.style.display = "none";
+        			}
+        		}
+    </script>
+
+
+    <!-- Bootstrap core JavaScript-->
+    <script src="vendor/jquery/jquery.min.js"></script>
+    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Core plugin JavaScript-->
+    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="js/sb-admin-2.min.js"></script>
+
+    <!-- Crypto utils for encryption and decryption-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <!-- Page level plugins -->
+    <script src="vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <!-- Page level custom scripts -->
+    <script src="js/demo/datatables-demo.js"></script>
+
+
+</body>
+
+</html>

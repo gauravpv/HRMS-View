@@ -11,7 +11,7 @@
             <div class="hrms-dashboard-summary__head">
                 <div>
                     <h2 class="hrms-dashboard-summary__title">Data overview</h2>
-                    <p class="hrms-dashboard-summary__sub">Live counts from main tables in <span class="hrms-dashboard-summary__schema" th:text="${businessSchema} ?: 'hrms_bre'">hrms_bre</span></p>
+                    <p class="hrms-dashboard-summary__sub">Templates configured — latest activity shown below</p>
                 </div>
                 <span id="dash-summary-updated" class="hrms-badge hrms-dashboard-summary__badge">Loading…</span>
             </div>
@@ -26,23 +26,14 @@
                         <span class="hrms-dashboard-stat__label">Main tables</span>
                     </div>
                 </div>
-                <div class="hrms-dashboard-stat">
-                    <span class="hrms-dashboard-stat__icon" aria-hidden="true">
-                        <span class="material-symbols-outlined">dataset</span>
-                    </span>
-                    <div class="hrms-dashboard-stat__body">
-                        <span id="dash-stat-records" class="hrms-dashboard-stat__value">—</span>
-                        <span class="hrms-dashboard-stat__label">Total records</span>
-                    </div>
-                </div>
                 <div class="hrms-dashboard-stat hrms-dashboard-stat--wide">
                     <span class="hrms-dashboard-stat__icon" aria-hidden="true">
-                        <span class="material-symbols-outlined">update</span>
+                        <span class="material-symbols-outlined">history</span>
                     </span>
                     <div class="hrms-dashboard-stat__body">
-                        <span id="dash-stat-last" class="hrms-dashboard-stat__value">—</span>
-                        <span class="hrms-dashboard-stat__label">Latest change</span>
-                        <span id="dash-stat-last-table" class="hrms-dashboard-stat__hint">—</span>
+                        <span id="dash-stat-last-activity" class="hrms-dashboard-stat__value hrms-dashboard-stat__value--text">—</span>
+                        <span class="hrms-dashboard-stat__label">Last activity</span>
+                        <span id="dash-stat-last-activity-time" class="hrms-dashboard-stat__hint">—</span>
                     </div>
                 </div>
             </div>
@@ -52,88 +43,54 @@
             <div class="hrms-dashboard-quick">
                 <span class="hrms-dashboard-quick__label">Quick access</span>
                 <div class="hrms-dashboard-quick__links">
-                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/search-data}" class="hrms-dashboard-quick__link">
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/search-data}" class="hrms-dashboard-quick__link">
                         <span class="material-symbols-outlined" aria-hidden="true">search</span>
                         Search
                     </a>
-                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/table-status}" class="hrms-dashboard-quick__link">
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/table-status}" class="hrms-dashboard-quick__link">
                         <span class="material-symbols-outlined" aria-hidden="true">table_chart</span>
                         Table status
                     </a>
-                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/history-data}" class="hrms-dashboard-quick__link">
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/history-data}" class="hrms-dashboard-quick__link">
                         <span class="material-symbols-outlined" aria-hidden="true">history</span>
                         History
                     </a>
-                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-upload}" class="hrms-dashboard-quick__link">
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/data-upload}" class="hrms-dashboard-quick__link">
                         <span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span>
                         Bulk upload
                     </a>
-                    <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-movement}" class="hrms-dashboard-quick__link">
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/data-movement}" class="hrms-dashboard-quick__link">
                         <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span>
                         Data movement
+                    </a>
+                    <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/user-management}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span>
+                        User management
                     </a>
                 </div>
             </div>
         </section>
 
-        <section class="hrms-dashboard-section" aria-labelledby="dash-data-heading">
-            <h3 id="dash-data-heading" class="hrms-dashboard-section__title">Data management</h3>
-            <div class="hrms-module-grid">
-                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/search-data}" class="hrms-module-card">
-                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">search</span></span>
-                    <span class="hrms-module-card__body">
-                        <span class="hrms-module-card__title">Search Data</span>
-                        <span class="hrms-module-card__desc">Query tables and export</span>
-                    </span>
-                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
-                </a>
-                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/history-data}" class="hrms-module-card">
-                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">history</span></span>
-                    <span class="hrms-module-card__body">
-                        <span class="hrms-module-card__title">History Data</span>
-                        <span class="hrms-module-card__desc">Audit snapshots</span>
-                    </span>
-                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
-                </a>
-                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-upload}" class="hrms-module-card">
-                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">cloud_upload</span></span>
-                    <span class="hrms-module-card__body">
-                        <span class="hrms-module-card__title">Bulk Upload</span>
-                        <span class="hrms-module-card__desc">CSV import</span>
-                    </span>
-                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
-                </a>
-                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')" th:href="@{/table-status}" class="hrms-module-card">
-                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">table_chart</span></span>
-                    <span class="hrms-module-card__body">
-                        <span class="hrms-module-card__title">Table Status</span>
-                        <span class="hrms-module-card__desc">Counts and last updated</span>
-                    </span>
-                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
-                </a>
+        <section class="hrms-audit-feed" aria-labelledby="dash-audit-heading">
+            <div class="hrms-audit-feed__head">
+                <h3 id="dash-audit-heading" class="hrms-audit-feed__title">
+                    <span class="material-symbols-outlined" aria-hidden="true">history</span>
+                    Audit log
+                </h3>
+                <button type="button" id="dash-audit-refresh" class="hrms-btn hrms-btn-outline hrms-btn-sm">
+                    <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+                    Refresh
+                </button>
             </div>
-        </section>
+            <p class="hrms-audit-feed__sub">Sign-in, uploads, and moves to master or main — newest first.</p>
 
-        <section class="hrms-dashboard-section" sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" aria-labelledby="dash-admin-heading">
-            <h3 id="dash-admin-heading" class="hrms-dashboard-section__title">Administration</h3>
-            <div class="hrms-module-grid">
-                <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-movement}" class="hrms-module-card">
-                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">swap_horiz</span></span>
-                    <span class="hrms-module-card__body">
-                        <span class="hrms-module-card__title">Data Movement</span>
-                        <span class="hrms-module-card__desc">Master and main transfers</span>
-                    </span>
-                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
-                </a>
-                <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/user-management}" class="hrms-module-card">
-                    <span class="hrms-module-card__icon" aria-hidden="true"><span class="material-symbols-outlined">manage_accounts</span></span>
-                    <span class="hrms-module-card__body">
-                        <span class="hrms-module-card__title">User Management</span>
-                        <span class="hrms-module-card__desc">Users and security logs</span>
-                    </span>
-                    <span class="material-symbols-outlined hrms-module-card__chevron" aria-hidden="true">chevron_right</span>
-                </a>
+            <div id="dash-audit-loading" class="hrms-audit-feed__loading">
+                <span class="material-symbols-outlined hrms-spin" aria-hidden="true">progress_activity</span>
+                Loading activity…
             </div>
+            <p id="dash-audit-error" class="hrms-dashboard-summary__error" role="status" hidden></p>
+            <div id="dash-audit-empty" class="hrms-audit-feed__empty" hidden>No activity recorded yet.</div>
+            <ul id="dash-audit-list" class="hrms-audit-feed__list" role="log" aria-live="polite" hidden></ul>
         </section>
     </div>
 </main>

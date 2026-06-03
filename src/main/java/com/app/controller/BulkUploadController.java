@@ -35,6 +35,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.app.dto.BulkInsertResult;
 import com.app.dto.UploadIssue;
 import com.app.exception.HrmsApiException;
+import com.app.service.ActivityLogService;
 import com.app.service.GeneralService;
 import com.app.support.BulkUploadMessages;
 import com.app.utility.CommonUtils;
@@ -51,6 +52,7 @@ public class BulkUploadController {
     private static final Logger logger = LogManager.getLogger(BulkUploadController.class);
 
     private final GeneralService genService;
+    private final ActivityLogService activityLogService;
 
     @Value("${excel.validation}")
     private String excelValidation;
@@ -180,6 +182,13 @@ public class BulkUploadController {
             } else {
                 progress.status = "COMPLETED";
                 progress.message = "Successfully uploaded " + totalRows + " rows.";
+            }
+            if ("COMPLETED".equals(progress.status) || "COMPLETED_WITH_ERRORS".equals(progress.status)) {
+                int saved = totalRows - progress.errorCount;
+                String detail = progress.errorCount > 0
+                        ? saved + " of " + totalRows + " row(s), " + progress.errorCount + " failed"
+                        : totalRows + " row(s)";
+                activityLogService.recordUpload(tableName, username, detail);
             }
             logger.info("Bulk upload completed for {}", tableName);
         } catch (HrmsApiException ex) {

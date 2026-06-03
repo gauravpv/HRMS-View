@@ -24,7 +24,7 @@ public interface UserRepository extends JpaRepository<Users, Integer>{
 	@Query("select s from Users s where s.isEnabled = 0")
 	List<Users> findActiveUsers();
 	
-	@Query("select s from Users s where s.isEnabled = 1")
+	@Query("select s from Users s where s.isEnabled is null or s.isEnabled <> 0")
 	List<Users> findInactiveUsers();
 
 }

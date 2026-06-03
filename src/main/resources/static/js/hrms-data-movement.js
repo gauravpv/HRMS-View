@@ -64,6 +64,81 @@
     bindTableSearch('main-section', 'main-search');
 })();
 
+function hrmsCleanupModalBackdrops() {
+    if ($('.modal.show').length === 0) {
+        $('body').removeClass('modal-open').css('padding-right', '');
+        $('.modal-backdrop').remove();
+    }
+}
+
+function hrmsHideLoaderThen(next) {
+    var $loader = $('#loader');
+    var done = false;
+    function finish() {
+        if (done) {
+            return;
+        }
+        done = true;
+        hrmsCleanupModalBackdrops();
+        if (typeof next === 'function') {
+            next();
+        }
+    }
+    $loader.one('hidden.bs.modal', finish);
+    $loader.modal('hide');
+    setTimeout(function () {
+        if ($loader.hasClass('show')) {
+            $loader.removeClass('show').attr('aria-hidden', 'true').hide();
+        }
+        finish();
+    }, 500);
+}
+
+function hrmsShowMovementResult(resp, err, errorTitle) {
+    hrmsHideLoaderThen(function () {
+        if (typeof window.hrmsSessionResumeIdle === 'function') {
+            window.hrmsSessionResumeIdle();
+        }
+        if (err) {
+            if (window.hrmsShowUploadErrorFromXhr) {
+                hrmsShowUploadErrorFromXhr(err, errorTitle);
+            } else {
+                $('#msg').html(err.responseJSON ? err.responseJSON.errorMsg : 'Operation failed');
+                $('#successModal').modal('show');
+            }
+            return;
+        }
+        $('#msg').html((resp && resp.msg) ? resp.msg : 'Completed.');
+        $('#successModal').modal('show');
+    });
+}
+
+function runDataMovement(apiUrl, checkedBoxes, errorTitle) {
+    var $confirm = $('#exampleModalCenter');
+    $confirm.modal('hide');
+    $confirm.one('hidden.bs.modal', function () {
+        hrmsCleanupModalBackdrops();
+        if (typeof window.hrmsSessionSuspendIdle === 'function') {
+            window.hrmsSessionSuspendIdle();
+        }
+        $('#loader').modal('show');
+        $.ajax({
+            type: 'POST',
+            url: apiUrl,
+            traditional: true,
+            data: { stringList: checkedBoxes },
+            dataType: 'json',
+            timeout: 3600000,
+            success: function (resp) {
+                hrmsShowMovementResult(resp, null, errorTitle);
+            },
+            error: function (err) {
+                hrmsShowMovementResult(null, err, errorTitle);
+            }
+        });
+    });
+}
+
 function validateMasterMove() {
     var checked = $('#master-section input.table-checkbox-master:checked');
     if (checked.length === 0) {
@@ -74,23 +149,11 @@ function validateMasterMove() {
     $('#message').html('Are you sure you want to move selected tables to master?');
     $('#exampleModalCenter').modal('show');
     $('#accept-change').off('click').on('click', function () {
-        $('#exampleModalCenter').modal('hide');
-        $('#loader').modal('show');
         var checkedBoxes = [];
-        $('#master-section input.table-checkbox-master:checked').each(function () { checkedBoxes.push(this.value); });
-        $.post('/api/user/masterDataMovement', { stringList: checkedBoxes }, function (resp) {
-            $('#loader').modal('hide');
-            $('#msg').html(resp.msg);
-            $('#successModal').modal('show');
-        }).fail(function (err) {
-            $('#loader').modal('hide');
-            if (window.hrmsShowUploadErrorFromXhr) {
-                hrmsShowUploadErrorFromXhr(err, 'Move to Master failed');
-            } else {
-                $('#msg').html(err.responseJSON ? err.responseJSON.errorMsg : 'Operation failed');
-                $('#successModal').modal('show');
-            }
+        $('#master-section input.table-checkbox-master:checked').each(function () {
+            checkedBoxes.push(this.value);
         });
+        runDataMovement('/api/user/masterDataMovement', checkedBoxes, 'Move to Master failed');
     });
 }
 
@@ -104,22 +167,10 @@ function validateMainMove() {
     $('#message').html('Are you sure you want to move selected tables to main?');
     $('#exampleModalCenter').modal('show');
     $('#accept-change').off('click').on('click', function () {
-        $('#exampleModalCenter').modal('hide');
-        $('#loader').modal('show');
         var checkedBoxes = [];
-        $('#main-section input.table-checkbox-main:checked').each(function () { checkedBoxes.push(this.value); });
-        $.post('/api/user/mainDataMovement', { stringList: checkedBoxes }, function (resp) {
-            $('#loader').modal('hide');
-            $('#msg').html(resp.msg);
-            $('#successModal').modal('show');
-        }).fail(function (err) {
-            $('#loader').modal('hide');
-            if (window.hrmsShowUploadErrorFromXhr) {
-                hrmsShowUploadErrorFromXhr(err, 'Move to Main failed');
-            } else {
-                $('#msg').html(err.responseJSON ? err.responseJSON.errorMsg : 'Operation failed');
-                $('#successModal').modal('show');
-            }
+        $('#main-section input.table-checkbox-main:checked').each(function () {
+            checkedBoxes.push(this.value);
         });
+        runDataMovement('/api/user/mainDataMovement', checkedBoxes, 'Move to Main failed');
     });
 }

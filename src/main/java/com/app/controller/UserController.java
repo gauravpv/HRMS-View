@@ -1,20 +1,27 @@
 package com.app.controller;
 
-import java.security.Principal;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.oauth2.core.oidc.user.OidcUser;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import com.app.security.HrmsUserDetails;
+import com.app.service.UserRoleService;
+
 import com.app.dto.UserListItem;
+import com.app.security.HrmsAuthorities;
+import com.app.support.UserAccountStatus;
 import com.app.model.Users;
 import com.app.repository.RoleRepository;
 import com.app.repository.UserRepository;
@@ -32,6 +39,7 @@ public class UserController {
     private final UserRepository userRepo;
     private final RoleRepository roleRepository;
     private final SessionRegistry sessionRegistry;
+    private final UserRoleService userRoleService;
 
     @GetMapping({ "/data-management", "/dataManagement" })
     public String dataManagementRedirect() {
@@ -75,11 +83,35 @@ public class UserController {
     }
 
     @GetMapping({ "/user-management", "/userManagement" })
-    public String userManagement(Model model, @RequestParam(defaultValue = "all") String status, Principal principal) {
+    public String userManagement(Model model, @RequestParam(defaultValue = "all") String status,
+            Authentication authentication) {
         populateUserStats(model);
         model.addAttribute("userRows", buildUserRows(resolveUsers(status)));
         model.addAttribute("status", status);
+        model.addAttribute("currentUserId", resolveCurrentUserId(authentication));
         return "user-management";
+    }
+
+    @PostMapping("/user-management/role")
+    public String updateRole(
+            @RequestParam("userId") int userId,
+            @RequestParam("role") String role,
+            @RequestParam(defaultValue = "all") String status,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        Integer currentUserId = resolveCurrentUserId(authentication);
+        if (currentUserId != null && currentUserId == userId) {
+            redirectAttributes.addFlashAttribute("msg", "You cannot change your own role.");
+            return "redirect:/user-management?status=" + status;
+        }
+        try {
+            userRoleService.assignRole(userId, role);
+            redirectAttributes.addFlashAttribute("msg", "Role updated to " + HrmsAuthorities.normalizeRoleName(role) + ".");
+        } catch (IllegalArgumentException ex) {
+            logger.warn("updateRole failed userId={} role={}: {}", userId, role, ex.getMessage());
+            redirectAttributes.addFlashAttribute("msg", ex.getMessage());
+        }
+        return "redirect:/user-management?status=" + status;
     }
 
     @GetMapping("/users")
@@ -105,8 +137,9 @@ public class UserController {
             redirectAttributes.addFlashAttribute("msg", "User not found.");
             return "redirect:/user-management?status=active";
         }
-        user.setIsEnabled(1);
+        user.setIsEnabled(UserAccountStatus.DEACTIVATED);
         userRepo.save(user);
+        redirectAttributes.addFlashAttribute("msg", "User account deactivated.");
         return "redirect:/user-management?status=active";
     }
 
@@ -118,8 +151,9 @@ public class UserController {
             redirectAttributes.addFlashAttribute("msg", "User not found.");
             return "redirect:/user-management?status=inactive";
         }
-        user.setIsEnabled(0);
+        user.setIsEnabled(UserAccountStatus.ACTIVE);
         userRepo.save(user);
+        redirectAttributes.addFlashAttribute("msg", "User account activated.");
         return "redirect:/user-management?status=inactive";
     }
 
@@ -139,8 +173,12 @@ public class UserController {
     private void populateUserStats(Model model) {
         List<Users> all = userRepo.findAll();
         model.addAttribute("totalUsers", all.size());
-        model.addAttribute("activeEnabled", all.stream().filter(u -> u.getIsEnabled() != null && u.getIsEnabled() == 0).count());
-        model.addAttribute("inactiveEnabled", all.stream().filter(u -> u.getIsEnabled() != null && u.getIsEnabled() == 1).count());
+        model.addAttribute("activeEnabled", all.stream()
+                .filter(u -> UserAccountStatus.isActive(u.getIsEnabled()))
+                .count());
+        model.addAttribute("inactiveEnabled", all.stream()
+                .filter(u -> !UserAccountStatus.isActive(u.getIsEnabled()))
+                .count());
         model.addAttribute("activeNow", sessionRegistry.getAllPrincipals().size());
     }
 
@@ -148,8 +186,27 @@ public class UserController {
         List<UserListItem> rows = new ArrayList<>();
         for (Users user : users) {
             List<String> roles = roleRepository.findRolebyUserId(user.getUserId());
-            rows.add(new UserListItem(user, roles.isEmpty() ? "USER" : roles.get(0)));
+            String roleName = roles.isEmpty() ? HrmsAuthorities.USER : HrmsAuthorities.normalizeRoleName(roles.get(0));
+            rows.add(new UserListItem(user, roleName));
         }
         return rows;
+    }
+
+    private Integer resolveCurrentUserId(Authentication authentication) {
+        if (authentication == null || authentication.getPrincipal() == null) {
+            return null;
+        }
+        Object principal = authentication.getPrincipal();
+        if (principal instanceof HrmsUserDetails userDetails) {
+            return userDetails.getUserId();
+        }
+        if (principal instanceof OidcUser oidcUser) {
+            String email = oidcUser.getPreferredUsername();
+            if (email != null) {
+                Users user = userRepo.findByUsernameOrEmailIgnoreCase(email);
+                return user != null ? user.getUserId() : null;
+            }
+        }
+        return null;
     }
 }

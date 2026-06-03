@@ -1,85 +1,64 @@
 <!DOCTYPE html>
-<html class="light" lang="en" xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="utf-8"/>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Login | HRMS</title>
-    <link rel="preload" th:href="@{/vendor/fonts/material-symbols-outlined/material-symbols-outlined-latin-400-normal.woff2}" as="font" type="font/woff2" crossorigin="anonymous"/>
-    <link rel="preload" th:href="@{/vendor/fonts/inter/inter-latin-400-normal.woff2}" as="font" type="font/woff2" crossorigin="anonymous"/>
-    <link rel="stylesheet" th:href="@{/css/hrms-vendor-fonts.css}"/>
-    <link rel="stylesheet" th:href="@{/css/hrms-tailwind.css}"/>
-    <link rel="stylesheet" th:href="@{/css/hrms-design-tokens.css}"/>
-    <link rel="stylesheet" th:href="@{/css/hrms-layout.css}"/>
-    <style>
-        body {
-            background-color: var(--hrms-background);
-            background-image: radial-gradient(#00336611 1px, transparent 1px);
-            background-size: 24px 24px;
-            min-height: 100dvh;
-            color: var(--hrms-on-surface);
-        }
-        .glass-card { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); }
-    </style>
-</head>
-<body class="min-h-screen flex flex-col font-sans font-body-md text-on-surface">
-<header class="fixed top-0 left-0 w-full z-50 flex items-center px-lg h-16 bg-surface-container-lowest border-b border-outline-variant">
-    <div class="flex items-center gap-sm">
-        <span class="material-symbols-outlined text-primary">security</span>
-        <span class="font-headline-md font-bold text-primary">HRMS</span>
-    </div>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Login', false)}"></head>
+<body class="hrms-login-page font-sans">
+<header class="hrms-login-topbar">
+    <span class="hrms-login-topbar__mark" aria-hidden="true">
+        <span class="material-symbols-outlined">shield</span>
+    </span>
+    <span class="hrms-login-topbar__title">HRMS</span>
 </header>
 
-<main class="flex-grow flex items-center justify-center px-gutter pt-24 pb-32">
-    <div class="w-full max-w-[440px]">
-        <div class="bg-surface-container-lowest border border-outline-variant p-lg lg:p-xl glass-card">
-            <div class="flex flex-col items-center mb-xl">
-                <div class="w-12 h-12 bg-primary-container rounded-lg flex items-center justify-center mb-md">
-                    <span class="material-symbols-outlined text-on-primary-fixed" style="font-variation-settings:'FILL' 1">security</span>
+<main class="hrms-login-main">
+    <div class="hrms-login-wrap">
+        <article class="hrms-panel hrms-login-card">
+            <div class="hrms-panel-accent"></div>
+            <div class="hrms-panel-body">
+                <div class="hrms-login-card__head">
+                    <div class="hrms-login-card__icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">lock</span>
+                    </div>
+                    <h1 class="hrms-login-card__title">Sign in</h1>
+                    <p class="hrms-login-card__sub">Corporate Integrity System — use your HRMS account</p>
                 </div>
-                <h1 class="font-headline-md text-primary text-center">HRMS</h1>
-                <p class="font-body-sm text-on-surface-variant mt-xs text-center">Corporate Integrity System Access</p>
-            </div>
 
-            <div th:if="${param.error}" class="mb-md p-md bg-error-container/30 border border-error text-error font-body-sm rounded">
-                Invalid username or password.
-            </div>
-            <div th:if="${param.logout}" class="mb-md p-md bg-secondary-container/20 text-on-secondary-container font-body-sm rounded">
-                You have been signed out.
-            </div>
-
-            <div th:if="${azureEnabled}">
-                <a th:href="@{/oauth2/authorization/azure}" class="w-full h-[48px] bg-primary-container text-on-primary font-title-lg flex items-center justify-center hover:bg-primary transition-colors">
-                    Sign in with Microsoft
-                </a>
-            </div>
-
-            <form th:if="${!azureEnabled}" th:action="@{/login}" method="post" class="space-y-lg">
-                <div class="space-y-xs">
-                    <label class="font-label-md text-on-surface-variant" for="username">Username or email</label>
-                    <input class="w-full h-[40px] px-md border border-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none bg-surface-container-lowest"
-                           id="username" name="username" placeholder="e.g. Gaurav Pampana or you@company.com" type="text" required autocomplete="username"/>
-                    <p class="font-label-sm text-on-surface-variant">Use your HRMS display name or corporate email. Password is case-sensitive.</p>
+                <div th:if="${param.error}" class="hrms-login-alert hrms-login-alert--error" role="alert">
+                    <span class="material-symbols-outlined" aria-hidden="true">error</span>
+                    <span>Invalid username or password.</span>
                 </div>
-                <div class="space-y-xs">
-                    <label class="font-label-md text-on-surface-variant" for="password">Password</label>
-                    <input class="w-full h-[40px] px-md border border-outline-variant focus:border-secondary focus:ring-2 focus:ring-secondary/20 outline-none bg-surface-container-lowest"
-                           id="password" name="password" placeholder="••••••••" type="password" required autocomplete="current-password"/>
+                <div th:if="${param.logout}" class="hrms-login-alert hrms-login-alert--info" role="status">
+                    <span class="material-symbols-outlined" aria-hidden="true">info</span>
+                    <span>You have been signed out.</span>
                 </div>
-                <button class="w-full h-[48px] bg-primary-container text-on-primary font-title-lg hover:bg-primary transition-colors" type="submit">
-                    Sign In
-                </button>
-            </form>
-        </div>
-        <div class="mt-lg flex justify-between items-center opacity-60">
-            <div class="h-1 w-12 bg-outline-variant"></div>
-            <div class="font-label-sm text-on-tertiary-fixed-variant tracking-widest uppercase">Verified Access Only</div>
-            <div class="h-1 w-12 bg-outline-variant"></div>
-        </div>
+
+                <div th:if="${azureEnabled}">
+                    <a th:href="@{/oauth2/authorization/azure}" class="hrms-login-ms-btn">
+                        Sign in with Microsoft
+                    </a>
+                </div>
+
+                <form th:if="${!azureEnabled}" th:action="@{/login}" method="post" class="hrms-login-form">
+                    <div class="hrms-field">
+                        <label for="username">Username or email</label>
+                        <input class="hrms-input" id="username" name="username" type="text" required
+                               autocomplete="username" placeholder="Display name or email"/>
+                        <p class="hrms-field-hint">Password is case-sensitive.</p>
+                    </div>
+                    <div class="hrms-field">
+                        <label for="password">Password</label>
+                        <input class="hrms-input" id="password" name="password" type="password" required
+                               autocomplete="current-password" placeholder="Enter password"/>
+                    </div>
+                    <button type="submit" class="hrms-login-submit">Sign in</button>
+                </form>
+            </div>
+        </article>
+        <p class="hrms-login-footnote">Verified access only</p>
     </div>
 </main>
 
-<footer class="fixed bottom-0 left-0 w-full z-50 flex flex-col md:flex-row justify-between items-center px-lg py-md gap-sm bg-surface-container-lowest border-t border-outline-variant">
-    <span class="font-body-sm text-on-surface-variant">© 2024 HRMS. Corporate Integrity System.</span>
+<footer class="hrms-login-page-footer">
+    © 2024 HRMS · Corporate Integrity System
 </footer>
 </body>
 </html>

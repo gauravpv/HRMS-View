@@ -37,7 +37,10 @@ function sendFileWithProgress() {
                     // Use the new async endpoint
                     var url = '/api/user/addFileAsync?tableName=' + tableName;
                     $("#loader").modal('show');
-                    
+                    if (typeof window.hrmsSessionSuspendIdle === 'function') {
+                        window.hrmsSessionSuspendIdle();
+                    }
+
                     $.ajax({
                         type: "POST",
                         contentType: false,
@@ -58,6 +61,9 @@ function sendFileWithProgress() {
                             }
                         },
                         error: function (e) {
+                            if (typeof window.hrmsSessionResumeIdle === 'function') {
+                                window.hrmsSessionResumeIdle();
+                            }
                             console.log("Error starting upload");
                             $("#msg").html(e.responseJSON ? e.responseJSON.errorMsg : "Upload failed");
                             $("#loader").modal('hide');
@@ -104,7 +110,10 @@ function showProgressModal(progressKey, totalRows) {
                        progress.status === "ERROR" || 
                        progress.status === "COMPLETED_WITH_ERRORS") {
                         clearInterval(progressInterval);
-                        
+                        if (typeof window.hrmsSessionResumeIdle === 'function') {
+                            window.hrmsSessionResumeIdle();
+                        }
+
                         // Wait a moment to show 100% before closing
                         setTimeout(function() {
                             $("#upload-progress-modal").modal('hide');
@@ -120,6 +129,9 @@ function showProgressModal(progressKey, totalRows) {
             error: function(e) {
                 console.log("Error checking progress", e);
                 clearInterval(progressInterval);
+                if (typeof window.hrmsSessionResumeIdle === 'function') {
+                    window.hrmsSessionResumeIdle();
+                }
                 $("#upload-progress-modal").modal('hide');
                 $("#msg").html("Error checking upload progress. The upload may still be running.");
                 $("#successModal").modal("show");

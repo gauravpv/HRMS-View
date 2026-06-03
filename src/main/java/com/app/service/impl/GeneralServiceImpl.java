@@ -18,6 +18,7 @@ import com.app.dto.BulkInsertResult;
 import com.app.exception.HrmsApiException;
 import com.app.support.BulkUploadMessages;
 import com.app.support.DataMovementMessages;
+import com.app.support.DataMovementProcedures;
 import com.app.model.RequestResponseLogDetails;
 import com.app.service.GeneralService;
 import com.app.service.RequestResponseLogDetailsService;
@@ -260,21 +261,26 @@ public class GeneralServiceImpl implements GeneralService {
         }
     }
 
-    private String determineHistoryProcedure(String tableName) {
-        return "SP_MOVE_" + tableName.toUpperCase() + "_HISTORY";
-    }
-
     @Override
     public String moveToHistory(String tableName) {
         tabService.requireMasterTable(tableName);
-        final String procedure = determineHistoryProcedure(tableName);
-        logger.debug("Executing {}", procedure);
+        final String procedure = DataMovementProcedures.moveToHistory(tableName);
+        executeProcedure(tableName, procedure);
+        return "Moved to History!";
+    }
+
+    private void executeProcedure(String tableName, String procedure) {
+        String callSql = "{call " + procedure + "()}";
+        long started = System.currentTimeMillis();
+        logger.info("Data movement calling procedure={} table={}", procedure, tableName);
         try {
-            jdbcTemplate.call(connection -> connection.prepareCall("{call " + procedure + "}"), new ArrayList<>());
-            return "Moved to History!";
+            jdbcTemplate.call(connection -> connection.prepareCall(callSql), new ArrayList<>());
+            logger.info("Data movement completed procedure={} table={} durationMs={}",
+                    procedure, tableName, System.currentTimeMillis() - started);
         } catch (DataAccessException ex) {
-            logger.error("Move to history failed for {}", tableName, ex);
-            throw new HrmsApiException("Unable to move data to history.");
+            logger.error("Data movement failed procedure={} table={} durationMs={}",
+                    procedure, tableName, System.currentTimeMillis() - started, ex);
+            throw new HrmsApiException(DataMovementMessages.fromProcedureFailure(tableName, procedure, ex));
         }
     }
 
@@ -313,27 +319,13 @@ public class GeneralServiceImpl implements GeneralService {
         }
         for (String name : tableNames) {
             tabService.requireMasterTable(name);
-            try {
-                if (includeHistoryStep) {
-                    moveToHistory(name);
-                }
-                String tab = name.replace("_master", "");
-                String procedure = includeHistoryStep
-                        ? "SP_MOVE_" + tab.toUpperCase()
-                        : "SP_MOVE_" + tab.toUpperCase() + "_MAIN";
-                String callSql = "{call " + procedure + "()}";
-                jdbcTemplate.call(connection -> connection.prepareCall(callSql), new ArrayList<>());
-            } catch (HrmsApiException ex) {
-                throw ex;
-            } catch (DataAccessException ex) {
-                String tab = name.replace("_master", "");
-                String procedure = includeHistoryStep
-                        ? "SP_MOVE_" + tab.toUpperCase()
-                        : "SP_MOVE_" + tab.toUpperCase() + "_MAIN";
-                logger.error("Data movement failed table={} procedure={}", name, procedure, ex);
-                throw new HrmsApiException(
-                        DataMovementMessages.fromProcedureFailure(name, procedure, ex));
+            if (includeHistoryStep) {
+                moveToHistory(name);
             }
+            String procedure = includeHistoryStep
+                    ? DataMovementProcedures.moveToMaster(name)
+                    : DataMovementProcedures.moveToMain(name);
+            executeProcedure(name, procedure);
         }
         return includeHistoryStep ? "Moved all data to Master" : "Moved all data to Main";
     }

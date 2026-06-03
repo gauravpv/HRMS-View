@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/hrms-head :: hrmsHead('Access Denied')}"></head>
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Access Denied', false)}"></head>
 <body class="font-sans bg-background flex items-center justify-center min-h-screen p-lg">
 <article class="hrms-panel max-w-md w-full text-center">
     <div class="hrms-panel-accent"></div>
@@ -9,7 +9,7 @@
             <span class="material-symbols-outlined text-error">lock</span>
         </div>
         <h1 class="font-headline-md text-primary mb-sm">Access denied</h1>
-        <p class="font-body-md text-on-surface-variant mb-lg">You do not have permission to open this page. User Management requires an administrator account.</p>
+        <p class="font-body-md text-on-surface-variant mb-lg">You do not have permission to open this page. Only administrators can access User Management.</p>
         <div class="flex flex-wrap gap-sm justify-center">
             <a th:href="@{/}" class="hrms-btn hrms-btn-primary">Home</a>
             <a th:href="@{/logout}" class="hrms-btn hrms-btn-outline">Sign out</a>

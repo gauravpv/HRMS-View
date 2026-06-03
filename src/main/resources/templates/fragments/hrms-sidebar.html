@@ -15,7 +15,7 @@
             <span class="hrms-nav-text">Dashboard</span>
         </a>
 
-        <div sec:authorize="hasAnyAuthority('ADMIN','EDITOR','USER')"
+        <div sec:authorize="hasAnyAuthority('ADMIN','USER')"
              id="data-mgmt-group"
              class="hrms-nav-group"
              th:classappend="${activeNav == 'search-data' || activeNav == 'history-data' || activeNav == 'bulk-upload' || activeNav == 'table-status'} ? ' is-expanded is-child-active' : ''">
@@ -43,7 +43,7 @@
                             <span class="material-symbols-outlined hrms-nav-sub-icon" aria-hidden="true">history</span>
                             <span>History Data</span>
                         </a>
-                        <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-upload}"
+                        <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/data-upload}"
                            th:classappend="${activeNav == 'bulk-upload'} ? ' is-active' : ''"
                            class="hrms-nav-sub-item">
                             <span class="material-symbols-outlined hrms-nav-sub-icon" aria-hidden="true">cloud_upload</span>
@@ -60,7 +60,7 @@
             </div>
         </div>
 
-        <a sec:authorize="hasAnyAuthority('ADMIN','EDITOR')" th:href="@{/data-movement}"
+        <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/data-movement}"
            th:classappend="${activeNav == 'data-movement'} ? ' hrms-nav-active' : ' hrms-nav-link'"
            class="hrms-nav-item">
             <span class="material-symbols-outlined hrms-nav-icon" aria-hidden="true">swap_horiz</span>

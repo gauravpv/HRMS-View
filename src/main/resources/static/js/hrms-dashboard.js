@@ -1,4 +1,4 @@
-(function initDashboardSummary() {
+(function initDashboard() {
     var tablesEl = document.getElementById('dash-stat-tables');
     if (!tablesEl) {
         return;
@@ -11,7 +11,7 @@
         }
     }
 
-    function showError(message) {
+    function showSummaryError(message) {
         var err = document.getElementById('dash-summary-error');
         if (err) {
             err.textContent = message;
@@ -46,34 +46,25 @@
             return;
         }
         setText('dash-stat-tables', Number(summary.tableCount || 0).toLocaleString());
-        setText('dash-stat-records', Number(summary.totalRecords || 0).toLocaleString());
 
-        if (summary.latestUpdated) {
-            setText('dash-stat-last', formatServerDate(summary.latestUpdated));
-            var hint = summary.latestTableName ? summary.latestTableName + ' · most recent' : '';
-            setText('dash-stat-last-table', hint);
+        if (summary.lastActivitySummary) {
+            setText('dash-stat-last-activity', summary.lastActivitySummary);
+            setText('dash-stat-last-activity-time', summary.lastActivityAt
+                ? formatServerDate(summary.lastActivityAt)
+                : 'See audit log for full history');
         } else {
-            setText('dash-stat-last', '—');
-            setText('dash-stat-last-table', summary.tableCount ? 'No timestamp on tables' : 'No main tables configured');
-        }
-
-        if (summary.unavailableCount > 0) {
-            var err = document.getElementById('dash-summary-error');
-            if (err) {
-                err.textContent = summary.unavailableCount + ' table(s) could not be counted — open Table Status for details.';
-                err.hidden = false;
-            }
+            setText('dash-stat-last-activity', 'No activity yet');
+            setText('dash-stat-last-activity-time', 'Sign-in, uploads, and moves appear in the audit log');
         }
 
         var badge = document.getElementById('dash-summary-updated');
         if (badge) {
-            var label = summary.cached ? 'Cached · ' : 'Refreshed ';
-            badge.textContent = label + formatLocaleDate(new Date());
+            badge.textContent = 'Updated ' + formatLocaleDate(new Date());
         }
     }
 
     function loadSummary() {
-        fetch('/api/user/dashboardSummary', {
+        return fetch('/api/user/dashboardSummary', {
             credentials: 'same-origin',
             headers: { Accept: 'application/json' }
         })
@@ -90,24 +81,135 @@
             })
             .catch(function (err) {
                 setText('dash-stat-tables', '—');
-                setText('dash-stat-records', '—');
-                setText('dash-stat-last', '—');
-                setText('dash-stat-last-table', '');
-                showError(err && err.message ? err.message : 'Could not load overview.');
+                setText('dash-stat-last-activity', '—');
+                setText('dash-stat-last-activity-time', '');
+                showSummaryError(err && err.message ? err.message : 'Could not load overview.');
             });
     }
 
-    function scheduleLoad() {
-        if ('requestIdleCallback' in window) {
-            requestIdleCallback(loadSummary, { timeout: 2000 });
-        } else {
-            setTimeout(loadSummary, 150);
+    function itemClassForAction(action) {
+        if (action === 'LOGIN') return 'hrms-audit-feed__item--login';
+        if (action === 'LOGOUT') return 'hrms-audit-feed__item--logout';
+        if (action === 'UPLOAD') return 'hrms-audit-feed__item--upload';
+        if (action === 'MOVE_TO_MASTER' || action === 'MOVE_TO_MAIN') return 'hrms-audit-feed__item--move';
+        return '';
+    }
+
+    function renderAuditItem(row) {
+        var li = document.createElement('li');
+        li.className = 'hrms-audit-feed__item ' + itemClassForAction(row.action);
+
+        var iconWrap = document.createElement('span');
+        iconWrap.className = 'hrms-audit-feed__icon';
+        iconWrap.setAttribute('aria-hidden', 'true');
+        var icon = document.createElement('span');
+        icon.className = 'material-symbols-outlined';
+        icon.textContent = row.icon || 'history';
+        iconWrap.appendChild(icon);
+
+        var body = document.createElement('div');
+        body.className = 'hrms-audit-feed__body';
+
+        var line = document.createElement('div');
+        line.className = 'hrms-audit-feed__line hrms-audit-feed__summary';
+        line.textContent = row.summary || (row.user + ' — ' + (row.actionLabel || row.action));
+        body.appendChild(line);
+
+        if (row.loggedAt) {
+            var meta = document.createElement('div');
+            meta.className = 'hrms-audit-feed__meta';
+            meta.textContent = formatServerDate(row.loggedAt);
+            body.appendChild(meta);
+        }
+
+        li.appendChild(iconWrap);
+        li.appendChild(body);
+        return li;
+    }
+
+    function setAuditLoading(loading) {
+        var el = document.getElementById('dash-audit-loading');
+        if (el) {
+            el.hidden = !loading;
         }
     }
 
+    function loadAuditFeed() {
+        var list = document.getElementById('dash-audit-list');
+        var empty = document.getElementById('dash-audit-empty');
+        var errEl = document.getElementById('dash-audit-error');
+        if (!list) {
+            return Promise.resolve();
+        }
+
+        setAuditLoading(true);
+        if (errEl) {
+            errEl.hidden = true;
+            errEl.textContent = '';
+        }
+        if (empty) {
+            empty.hidden = true;
+        }
+        list.hidden = true;
+        list.innerHTML = '';
+
+        return fetch('/api/user/activityLogs?limit=100', {
+            credentials: 'same-origin',
+            headers: { Accept: 'application/json' }
+        })
+            .then(function (response) {
+                if (!response.ok) {
+                    return response.json().then(function (body) {
+                        throw new Error(body && body.errorMsg ? body.errorMsg : 'Request failed');
+                    });
+                }
+                return response.json();
+            })
+            .then(function (data) {
+                var rows = data && data.result ? data.result : [];
+                setAuditLoading(false);
+                if (!rows.length) {
+                    if (empty) {
+                        empty.hidden = false;
+                    }
+                    return;
+                }
+                rows.forEach(function (row) {
+                    list.appendChild(renderAuditItem(row));
+                });
+                list.hidden = false;
+            })
+            .catch(function (err) {
+                setAuditLoading(false);
+                if (errEl) {
+                    errEl.textContent = err && err.message ? err.message : 'Could not load audit log.';
+                    errEl.hidden = false;
+                }
+            });
+    }
+
+    function startDashboard() {
+        if ('requestIdleCallback' in window) {
+            requestIdleCallback(function () {
+                loadSummary();
+                loadAuditFeed();
+            }, { timeout: 2000 });
+        } else {
+            setTimeout(function () {
+                loadSummary();
+                loadAuditFeed();
+            }, 150);
+        }
+    }
+
+    var refreshBtn = document.getElementById('dash-audit-refresh');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', loadAuditFeed);
+    }
+
     if (document.readyState === 'complete') {
-        scheduleLoad();
+        startDashboard();
     } else {
-        window.addEventListener('load', scheduleLoad, { once: true });
+        window.addEventListener('load', startDashboard, { once: true });
     }
 })();

@@ -19,7 +19,13 @@ $(function () {
         deferRender: true,
         autoWidth: false,
         dom: '<"hrms-dt-toolbar"f>rt<"hrms-dt-footer"lpi>',
-        columnDefs: [{ orderable: false, targets: 3 }],
+        columnDefs: [
+            { orderable: false, targets: [1, 3] },
+            { width: "36%", targets: 0 },
+            { width: "14%", targets: 1 },
+            { width: "22%", targets: 2 },
+            { width: "28%", targets: 3 }
+        ],
         initComplete: function () {
             var $table = $(this.api().table().node());
             if (!$table.parent().hasClass("hrms-dt-table-area")) {
@@ -41,4 +47,26 @@ $(function () {
             }
         }
     });
+});
+
+document.addEventListener("click", function (event) {
+    var button = event.target.closest(".hrms-role-switch__btn");
+    if (!button || button.classList.contains("is-active")) {
+        return;
+    }
+    var form = button.closest(".hrms-user-role-form");
+    if (!form) {
+        return;
+    }
+    var role = button.getAttribute("data-role");
+    var userName = form.getAttribute("data-user-name");
+    var label = userName || "this user";
+    if (!confirm("Change role for " + label + " to " + role + "?")) {
+        return;
+    }
+    var hidden = form.querySelector(".hrms-user-role-value");
+    if (hidden) {
+        hidden.value = role;
+    }
+    form.submit();
 });

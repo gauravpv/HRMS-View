@@ -16,17 +16,11 @@ public class DashboardSummary {
     @JsonProperty("tableCount")
     private int tableCount;
 
-    @JsonProperty("totalRecords")
-    private long totalRecords;
+    @JsonProperty("lastActivitySummary")
+    private String lastActivitySummary;
 
-    @JsonProperty("latestUpdated")
-    private String latestUpdated;
-
-    @JsonProperty("latestTableName")
-    private String latestTableName;
-
-    @JsonProperty("unavailableCount")
-    private int unavailableCount;
+    @JsonProperty("lastActivityAt")
+    private String lastActivityAt;
 
     @JsonProperty("cached")
     private boolean cached;

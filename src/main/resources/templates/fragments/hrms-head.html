@@ -1,6 +1,8 @@
 <head th:fragment="hrmsHead(pageTitle, needsDataTables)" xmlns:th="http://www.thymeleaf.org">
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="hrms-session-timeout-minutes" th:content="${sessionTimeoutMinutes}"/>
+    <meta name="hrms-session-expired-url" th:content="@{/session-expired}"/>
     <title th:text="${pageTitle} + ' | HRMS'">HRMS</title>
     <link rel="preload" th:href="@{/vendor/fonts/material-symbols-outlined/material-symbols-outlined-latin-400-normal.woff2}" as="font" type="font/woff2" crossorigin="anonymous"/>
     <link rel="preload" th:href="@{/vendor/fonts/inter/inter-latin-400-normal.woff2}" as="font" type="font/woff2" crossorigin="anonymous"/>

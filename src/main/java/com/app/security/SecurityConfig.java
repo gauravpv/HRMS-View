@@ -14,13 +14,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.session.HttpSessionEventPublisher;
 
 import com.app.repository.RoleRepository;
 import com.app.repository.UserRepository;
 import com.app.security.handler.CustomAuthenticationSuccessHandler;
 import com.app.security.handler.FormLoginAuthenticationSuccessHandler;
-import com.app.service.impl.UserSessionServiceImpl;
 
 @Configuration
 @EnableWebSecurity
@@ -45,9 +45,6 @@ public class SecurityConfig {
 
     @Autowired
     private RoleRepository roleRepository;
-
-    @Autowired
-    private UserSessionServiceImpl userSessionService;
 
     @Bean
     PasswordEncoder passwordEncoder() {
@@ -75,30 +72,30 @@ public class SecurityConfig {
                 .requestMatchers("/login", "/css/**", "/js/**", "/img/**", "/vendor/**").permitAll()
                 .requestMatchers(
                         "/error", "/access-denied",
+                        "/pending-approval",
                         "/not-found", "/notfound",
                         "/logged-in", "/loggedin",
                         "/session-expired")
                     .permitAll()
-                .requestMatchers("/").hasAnyAuthority("ADMIN", "EDITOR", "USER")
-                .requestMatchers("/index").hasAnyAuthority("ADMIN", "EDITOR", "USER")
+                .requestMatchers("/").hasAnyAuthority(HrmsAuthorities.APP_ACCESS)
+                .requestMatchers("/index").hasAnyAuthority(HrmsAuthorities.APP_ACCESS)
                 .requestMatchers(
                         "/data-management", "/dataManagement",
                         "/search-data", "/searchData",
                         "/history-data", "/historyData",
-                        "/table-status", "/tableStatus")
-                    .hasAnyAuthority("ADMIN", "EDITOR", "USER")
-                .requestMatchers("/data-upload", "/dataUpload").hasAnyAuthority("ADMIN", "EDITOR")
-                .requestMatchers(
+                        "/table-status", "/tableStatus",
+                        "/data-upload", "/dataUpload",
                         "/data-movement", "/dataMovement",
                         "/move-to-master", "/moveToMaster",
                         "/move-to-main", "/moveToMain")
-                    .hasAnyAuthority("ADMIN", "EDITOR")
+                    .hasAnyAuthority(HrmsAuthorities.APP_ACCESS)
                 .requestMatchers(
                         "/user-management", "/userManagement",
-                        "/users", "/active", "/inactive", "/inActive")
-                    .hasAuthority("ADMIN")
-                .requestMatchers("/deactivate", "/deActive", "/activate").hasAuthority("ADMIN")
-                .requestMatchers("/api/user/**").hasAnyAuthority("ADMIN", "EDITOR", "USER")
+                        "/user-management/role",
+                        "/users", "/active", "/inactive", "/inActive",
+                        "/deactivate", "/deActive", "/activate")
+                    .hasAuthority(HrmsAuthorities.ADMIN)
+                .requestMatchers("/api/user/**").hasAnyAuthority(HrmsAuthorities.APP_ACCESS)
                 .anyRequest().authenticated());
 
         if (azureEnabled) {
@@ -125,6 +122,8 @@ public class SecurityConfig {
                     .permitAll());
         }
 
+        http.addFilterBefore(new PendingAccountFilter(userRepository), AuthorizationFilter.class);
+
         http
             .exceptionHandling(ex -> ex.accessDeniedPage("/access-denied"))
             .logout(logout -> logout
@@ -132,17 +131,15 @@ public class SecurityConfig {
                 .logoutSuccessHandler((request, response, authentication) -> {
                     String principal = authentication != null ? authentication.getName() : "anonymous";
                     logger.debug("Logout user={} remote={}", principal, request.getRemoteAddr());
-                    if (authentication != null) {
-                        userSessionService.setSessionInactiveOnLogout(authentication.getName());
-                    }
-                    if (request.getSession() != null) {
+                    if (request.getSession(false) != null) {
                         request.getSession().invalidate();
                     }
-                    response.sendRedirect("/login?logout=true");
+                    response.sendRedirect(request.getContextPath() + "/login?logout=true");
                 })
                 .deleteCookies("JSESSIONID")
                 .permitAll())
             .sessionManagement(session -> session
+                .invalidSessionUrl("/session-expired")
                 .maximumSessions(1)
                 .maxSessionsPreventsLogin(true)
                 .sessionRegistry(sessionRegistry)

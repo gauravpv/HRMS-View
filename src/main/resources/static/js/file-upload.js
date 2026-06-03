@@ -126,15 +126,23 @@ function revealUploadBar() {
     document.getElementById("upload-phase-progress").classList.remove("hidden");
 }
 
+function tempTableToMaster(tempTableName) {
+    if (!tempTableName || tempTableName === "Select") {
+        return tempTableName;
+    }
+    return String(tempTableName).replace(/_temp$/i, "_master");
+}
+
 async function runTruncateAndHistorySteps() {
-    const tableName = encodeURIComponent(uploadTableSelect().val());
+    const tempTable = uploadTableSelect().val();
+    const masterTable = tempTableToMaster(tempTable);
     openUploadProgressModal(true);
     setUploadStep("step-truncate", "active");
-    await ajaxGet("/api/user/truncateTable?tableName=" + tableName);
+    await ajaxGet("/api/user/truncateTable?tableName=" + encodeURIComponent(tempTable));
     setUploadStep("step-truncate", "done");
 
     setUploadStep("step-history", "active");
-    await ajaxGet("/api/user/moveToHistory?tableName=" + tableName);
+    await ajaxGet("/api/user/moveToHistory?tableName=" + encodeURIComponent(masterTable));
     setUploadStep("step-history", "done");
 
     revealUploadBar();
@@ -213,6 +221,9 @@ function sendFile() {
     }
 
     const startUploadFlow = () => {
+        if (typeof window.hrmsSessionSuspendIdle === "function") {
+            window.hrmsSessionSuspendIdle();
+        }
         if (!check) {
             openUploadProgressModal(false);
         }
@@ -249,6 +260,9 @@ function startAsyncUpload(file, tableName) {
             }
         },
         error: function (e) {
+            if (typeof window.hrmsSessionResumeIdle === "function") {
+                window.hrmsSessionResumeIdle();
+            }
             $("#upload-progress-modal").modal("hide");
             hrmsShowUploadErrorFromXhr(e, "Upload could not start");
             showFileUploadError(
@@ -283,6 +297,9 @@ function startProgressPolling(progressKey, totalRows) {
                         progress.status === "COMPLETED_WITH_ERRORS"
                     ) {
                         clearInterval(progressInterval);
+                        if (typeof window.hrmsSessionResumeIdle === "function") {
+                            window.hrmsSessionResumeIdle();
+                        }
                         setTimeout(function () {
                             $("#upload-progress-modal").modal("hide");
                             hrmsShowUploadProgressResult(progress);
@@ -297,6 +314,9 @@ function startProgressPolling(progressKey, totalRows) {
             },
             error: function (xhr) {
                 clearInterval(progressInterval);
+                if (typeof window.hrmsSessionResumeIdle === "function") {
+                    window.hrmsSessionResumeIdle();
+                }
                 $("#upload-progress-modal").modal("hide");
                 hrmsShowUploadResult({
                     title: "Progress unavailable",

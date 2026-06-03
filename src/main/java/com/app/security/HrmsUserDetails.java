@@ -5,6 +5,8 @@ import java.util.Collection;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import com.app.support.UserAccountStatus;
+
 public class HrmsUserDetails implements UserDetails {
 
     private static final long serialVersionUID = 1L;
@@ -81,7 +83,7 @@ public class HrmsUserDetails implements UserDetails {
 
     @Override
     public boolean isEnabled() {
-        return isEnabled != null && isEnabled == 0;
+        return UserAccountStatus.canAuthenticate(isEnabled);
     }
 
     public record UsersSnapshot(Integer userId, String userName, String password, String email,

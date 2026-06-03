@@ -84,18 +84,18 @@
                 </div>
 
                 <div th:if="${!#lists.isEmpty(userRows)}" class="hrms-table-shell hrms-user-table-shell data-table-container hrms-user-directory__table">
-                    <table id="usersTable" class="hrms-user-table w-full hrms-data-table display stripe">
+                    <table id="usersTable" class="hrms-user-table hrms-user-table--grid w-full hrms-data-table display stripe">
                         <thead>
                         <tr>
-                            <th>User details</th>
-                            <th>Role</th>
-                            <th>Status</th>
-                            <th class="text-right">Actions</th>
+                            <th class="hrms-user-table__col-user">User details</th>
+                            <th class="hrms-user-table__col-role">Role</th>
+                            <th class="hrms-user-table__col-status">Status</th>
+                            <th class="hrms-user-table__col-actions">Actions</th>
                         </tr>
                         </thead>
                         <tbody>
                         <tr th:each="row : ${userRows}" class="hrms-user-row">
-                            <td>
+                            <td class="hrms-user-table__col-user">
                                 <div class="hrms-user-cell">
                                     <div class="hrms-user-avatar"
                                          th:text="${row.user.userName != null and !#strings.isEmpty(row.user.userName) ? #strings.substring(row.user.userName,0,1).toUpperCase() : '?'}">U</div>
@@ -105,19 +105,38 @@
                                     </div>
                                 </div>
                             </td>
-                            <td>
-                                <span class="hrms-role-pill" th:classappend="${' ' + row.roleCssClass}" th:text="${row.roleName}">USER</span>
+                            <td class="hrms-user-table__col-role">
+                                <div th:if="${currentUserId != null and row.user.userId == currentUserId}" class="hrms-user-role-self">
+                                    <span class="hrms-role-pill" th:classappend="${' ' + row.roleCssClass}" th:text="${row.roleName}">USER</span>
+                                </div>
+                                <form th:unless="${currentUserId != null and row.user.userId == currentUserId}"
+                                      th:action="@{/user-management/role}" method="post"
+                                      class="hrms-user-role-form"
+                                      th:attr="data-user-name=${row.user.userName}">
+                                    <input type="hidden" name="userId" th:value="${row.user.userId}"/>
+                                    <input type="hidden" name="status" th:value="${status}"/>
+                                    <input type="hidden" name="role" class="hrms-user-role-value" th:value="${row.roleName}"/>
+                                    <div class="hrms-role-switch" role="group"
+                                         th:attr="aria-label=|Role for ${row.user.userName}|">
+                                        <button type="button" class="hrms-role-switch__btn"
+                                                th:classappend="${row.roleName == 'USER'} ? ' is-active' : ''"
+                                                data-role="USER">User</button>
+                                        <button type="button" class="hrms-role-switch__btn"
+                                                th:classappend="${row.roleName == 'ADMIN'} ? ' is-active' : ''"
+                                                data-role="ADMIN">Admin</button>
+                                    </div>
+                                </form>
                             </td>
-                            <td>
-                                <span th:if="${row.user.isEnabled == 0}" class="hrms-user-status hrms-user-status--active">
-                                    <span class="hrms-user-status-dot"></span> Active
-                                </span>
-                                <span th:if="${row.user.isEnabled == 1}" class="hrms-user-status hrms-user-status--inactive">
-                                    <span class="hrms-user-status-dot"></span> Inactive
+                            <td class="hrms-user-table__col-status">
+                                <span class="hrms-user-status"
+                                      th:classappend="${' ' + row.accountStatusCssClass}">
+                                    <span class="hrms-user-status-dot"></span>
+                                    <span th:text="${row.accountStatusLabel}">Status</span>
                                 </span>
                             </td>
-                            <td class="text-right">
-                                <a th:if="${row.user.isEnabled == 0}"
+                            <td class="hrms-user-table__col-actions">
+                                <div class="hrms-user-actions">
+                                <a th:if="${row.canDeactivate}"
                                    th:href="@{/deactivate(id=${row.user.userId})}"
                                    class="hrms-user-action hrms-user-action--danger"
                                    onclick="return confirm('Deactivate this user?');"
@@ -125,13 +144,15 @@
                                     <span class="material-symbols-outlined">block</span>
                                     <span class="hrms-user-action-label">Deactivate</span>
                                 </a>
-                                <a th:if="${row.user.isEnabled == 1}"
+                                <a th:if="${row.canActivate}"
                                    th:href="@{/activate(id=${row.user.userId})}"
                                    class="hrms-user-action hrms-user-action--primary"
+                                   onclick="return confirm('Activate this user account?');"
                                    title="Activate">
                                     <span class="material-symbols-outlined">check_circle</span>
                                     <span class="hrms-user-action-label">Activate</span>
                                 </a>
+                                </div>
                             </td>
                         </tr>
                         </tbody>

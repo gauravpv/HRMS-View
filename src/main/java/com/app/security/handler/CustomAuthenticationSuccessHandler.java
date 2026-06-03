@@ -18,6 +18,8 @@ import org.springframework.stereotype.Component;
 import com.app.model.Roles;
 import com.app.model.Users;
 import com.app.repository.UserRepository;
+import com.app.service.ActivityLogService;
+import com.app.support.UserAccountStatus;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -30,6 +32,9 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
 	@Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private ActivityLogService activityLogService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, 
@@ -47,18 +52,21 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
 
         if (existingUser.isPresent()) {
             Users userSession = existingUser.get();
-            if (userSession.getIsEnabled() == 0) {
+            if (UserAccountStatus.isActive(userSession.getIsEnabled())) {
                 userSession.setSessionId(sessionId);
                 userSession.setIsActive(0);
                 userSession.setLastLoginTime(timestamp);
                 userRepository.save(userSession);
+                activityLogService.recordLogin(
+                        userSession.getUserName() != null ? userSession.getUserName() : email);
                 logger.info("Azure login successful email={} redirect=/", email);
                 response.sendRedirect("/");
-            } else if(userSession.getIsEnabled() == 2) {
+            } else if (UserAccountStatus.isPendingApproval(userSession.getIsEnabled())) {
                 userSession.setSessionId(sessionId);
+                userSession.setLastLoginTime(timestamp);
                 userRepository.save(userSession);
-                logger.info("Azure login pending registration email={} redirect=/not-found", email);
-                response.sendRedirect("/not-found");
+                logger.info("Azure login pending approval email={} redirect=/pending-approval", email);
+                response.sendRedirect("/pending-approval");
             }
              else {
                 logger.warn("Azure login denied inactive email={}", email);
@@ -69,14 +77,14 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             newUser.setUserName(userName);
             newUser.setPassword("$2y$10$fvXFCSbQljs1iLBSpmNZ4exCTzy.Af.BR.xMzIGdyK6BpYs5jNI3i");
             newUser.setEmail(email);
-            newUser.setIsEnabled(2);
+            newUser.setIsEnabled(UserAccountStatus.PENDING_APPROVAL);
             newUser.setIsActive(0);
             newUser.setLastLoginTime(timestamp);
             newUser.setSessionId(sessionId);
             newUser.setRoles(roles);
             userRepository.save(newUser);
-            logger.info("Azure login new user created email={} redirect=/not-found", email);
-            response.sendRedirect("/not-found");
+            logger.info("Azure login new user created email={} redirect=/pending-approval", email);
+            response.sendRedirect("/pending-approval");
         }
     }
 

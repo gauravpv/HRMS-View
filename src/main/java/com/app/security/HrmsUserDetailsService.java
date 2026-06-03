@@ -45,14 +45,8 @@ public class HrmsUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("User has no password configured: " + username);
         }
 
-        List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-        List<String> roles = roleRepository.findRolebyUserId(user.getUserId());
-        for (String role : roles) {
-            authorities.add(new SimpleGrantedAuthority(role));
-        }
-        if (authorities.isEmpty()) {
-            authorities.add(new SimpleGrantedAuthority("USER"));
-        }
+        List<SimpleGrantedAuthority> authorities = HrmsAuthorities
+                .resolveAuthorities(roleRepository.findRolebyUserId(user.getUserId()));
 
         UsersSnapshot snapshot = new UsersSnapshot(
                 user.getUserId(),

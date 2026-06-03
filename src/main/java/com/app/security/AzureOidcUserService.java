@@ -1,6 +1,5 @@
 package com.app.security;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,11 +32,8 @@ public class AzureOidcUserService implements OAuth2UserService<OidcUserRequest, 
         Optional<Users> existingUser = userRepository.findByEmail(email);
         if (existingUser.isPresent()) {
             Users userSession = existingUser.get();
-            List<String> roles = roleRepository.findRolebyUserId(userSession.getUserId());
-            List<SimpleGrantedAuthority> authorities = new ArrayList<>();
-            for (String role : roles) {
-                authorities.add(new SimpleGrantedAuthority(role));
-            }
+            List<SimpleGrantedAuthority> authorities = HrmsAuthorities
+                    .resolveAuthorities(roleRepository.findRolebyUserId(userSession.getUserId()));
             oidcUser = new DefaultOidcUser(authorities, oidcUser.getIdToken(), oidcUser.getUserInfo());
         }
         return oidcUser;

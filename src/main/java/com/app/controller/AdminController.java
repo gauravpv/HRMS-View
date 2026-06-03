@@ -50,9 +50,14 @@ public class AdminController {
         return "access-denied";
     }
 
+    @GetMapping("/pending-approval")
+    public String pendingApproval() {
+        return "pending-approval";
+    }
+
     @GetMapping({ "/not-found", "/notfound" })
     public String showNotFoundPage() {
-        return "not-found";
+        return "redirect:/pending-approval";
     }
 
     @GetMapping({ "/logged-in", "/loggedin" })

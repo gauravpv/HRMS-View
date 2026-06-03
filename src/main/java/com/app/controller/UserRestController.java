@@ -31,6 +31,7 @@ import com.app.dto.DashboardSummary;
 import com.app.dto.StringListDto;
 import com.app.dto.TableStatusRow;
 import com.app.exception.HrmsApiException;
+import com.app.service.ActivityLogService;
 import com.app.service.GeneralService;
 import com.app.service.TableDetailsService;
 import com.app.service.TableStatusService;
@@ -50,6 +51,7 @@ public class UserRestController {
     private final GeneralService genService;
     private final TableDetailsService tabService;
     private final TableStatusService tableStatusService;
+    private final ActivityLogService activityLogService;
 
     @Value("${excel.validation}")
     private String excelValidation;
@@ -64,6 +66,17 @@ public class UserRestController {
             logger.error("Table status request failed", ex);
             return ApiResponses.clientError(
                     "Unable to load table status. Check database connectivity and table_details access.");
+        }
+    }
+
+    @GetMapping("/activityLogs")
+    public ResponseEntity<?> activityLogs(
+            @RequestParam(name = "limit", defaultValue = "100") int limit) {
+        try {
+            return ApiResponses.okValue("Activity logs retrieved", activityLogService.getRecentLogs(limit));
+        } catch (Exception ex) {
+            logger.error("Activity logs request failed", ex);
+            return ApiResponses.clientError("Unable to load activity logs.");
         }
     }
 
@@ -152,6 +165,8 @@ public class UserRestController {
         if ("Error".equals(msg)) {
             throw new HrmsApiException("Error in data upload. Please contact admin");
         }
+        int rowCount = Math.max(0, data.size() - 1);
+        activityLogService.recordUpload(tableName, username, rowCount + " row(s)");
         return ApiResponses.ok("Added data", Collections.emptyList());
     }
 
@@ -177,17 +192,37 @@ public class UserRestController {
     }
 
     @PostMapping("/masterDataMovement")
-    public ResponseEntity<AjaxBody> masterDataMovement(StringListDto tableNames) {
-        logger.info("masterDataMovement tables={}", tableNames);
-        String msg = genService.masterDataMove(tableNames.getStringList());
+    public ResponseEntity<AjaxBody> masterDataMovement(StringListDto tableNames, Principal principal) {
+        List<String> tables = resolveMovementTables(tableNames);
+        logger.info("masterDataMovement tables={} user={}", tables, principal.getName());
+        String msg = genService.masterDataMove(tables);
+        recordMovementActivitySafe(tables, principal.getName(), true);
         return ApiResponses.ok(msg);
     }
 
     @PostMapping("/mainDataMovement")
-    public ResponseEntity<AjaxBody> mainDataMovement(StringListDto tableNames) {
-        logger.info("mainDataMovement tables={}", tableNames);
-        String msg = genService.mainDataMove(tableNames.getStringList());
+    public ResponseEntity<AjaxBody> mainDataMovement(StringListDto tableNames, Principal principal) {
+        List<String> tables = resolveMovementTables(tableNames);
+        logger.info("mainDataMovement tables={} user={}", tables, principal.getName());
+        String msg = genService.mainDataMove(tables);
+        recordMovementActivitySafe(tables, principal.getName(), false);
         return ApiResponses.ok(msg);
+    }
+
+    private static List<String> resolveMovementTables(StringListDto tableNames) {
+        if (tableNames == null || tableNames.getStringList() == null || tableNames.getStringList().isEmpty()) {
+            throw new HrmsApiException(
+                    "No tables were received by the server. Select at least one table and try again.");
+        }
+        return tableNames.getStringList();
+    }
+
+    private void recordMovementActivitySafe(List<String> tables, String username, boolean toMaster) {
+        try {
+            activityLogService.recordMovement(tables, username, toMaster);
+        } catch (Exception ex) {
+            logger.warn("Activity log failed after successful data movement user={} tables={}", username, tables, ex);
+        }
     }
 
     private void validateFileName(String fileName) {

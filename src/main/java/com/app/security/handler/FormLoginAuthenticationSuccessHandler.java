@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 import com.app.model.Users;
 import com.app.repository.UserRepository;
 import com.app.security.HrmsUserDetails;
+import com.app.service.ActivityLogService;
+import com.app.support.UserAccountStatus;
 
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -25,9 +27,11 @@ public class FormLoginAuthenticationSuccessHandler implements AuthenticationSucc
     private static final Logger logger = LogManager.getLogger(FormLoginAuthenticationSuccessHandler.class);
 
     private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
-    public FormLoginAuthenticationSuccessHandler(UserRepository userRepository) {
+    public FormLoginAuthenticationSuccessHandler(UserRepository userRepository, ActivityLogService activityLogService) {
         this.userRepository = userRepository;
+        this.activityLogService = activityLogService;
     }
 
     @Override
@@ -47,20 +51,23 @@ public class FormLoginAuthenticationSuccessHandler implements AuthenticationSucc
         request.getSession().setAttribute("userName", user.getUserName());
         request.getSession().setAttribute("email", user.getEmail() != null ? user.getEmail() : user.getUserName());
 
-        if (user.getIsEnabled() == 0) {
+        if (UserAccountStatus.isActive(user.getIsEnabled())) {
             user.setSessionId(sessionId);
             user.setIsActive(0);
             user.setLastLoginTime(timestamp);
             userRepository.save(user);
+            activityLogService.recordLogin(user.getUserName());
             logger.info("Login successful userId={} user={} redirect=/", user.getUserId(), user.getUserName());
             response.sendRedirect("/");
             return;
         }
-        if (user.getIsEnabled() == 2) {
+        if (UserAccountStatus.isPendingApproval(user.getIsEnabled())) {
             user.setSessionId(sessionId);
+            user.setLastLoginTime(timestamp);
             userRepository.save(user);
-            logger.info("Login pending registration userId={} email={} redirect=/not-found", user.getUserId(), user.getEmail());
-            response.sendRedirect("/not-found");
+            logger.info("Login pending approval userId={} email={} redirect=/pending-approval",
+                    user.getUserId(), user.getEmail());
+            response.sendRedirect("/pending-approval");
             return;
         }
         logger.warn("Login denied inactive userId={} user={} isEnabled={}", user.getUserId(), user.getUserName(), user.getIsEnabled());

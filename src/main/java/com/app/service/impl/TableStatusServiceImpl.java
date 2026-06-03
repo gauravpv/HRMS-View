@@ -18,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import com.app.dto.DashboardSummary;
 import com.app.dto.TableStatusRow;
+import com.app.service.ActivityLogService;
 import com.app.service.TableDetailsService;
 import com.app.service.TableStatusService;
 
@@ -41,6 +42,7 @@ public class TableStatusServiceImpl implements TableStatusService {
 
     private final JdbcTemplate jdbcTemplate;
     private final TableDetailsService tableDetailsService;
+    private final ActivityLogService activityLogService;
 
     @Value("${app.business-schema:hrms_bre}")
     private String businessSchema;
@@ -62,36 +64,9 @@ public class TableStatusServiceImpl implements TableStatusService {
 
     @Override
     public DashboardSummary getDashboardSummary(boolean forceRefresh) {
-        CachedTableStatus cache = loadRows(forceRefresh);
-        List<TableStatusRow> rows = cache.rows();
-
-        long totalRecords = 0L;
-        int unavailableCount = 0;
-        TableStatusRow latestRow = null;
-        LocalDateTime latestDate = null;
-
-        for (TableStatusRow row : rows) {
-            long count = row.getRecordCount();
-            if (count >= 0) {
-                totalRecords += count;
-            } else {
-                unavailableCount += 1;
-            }
-
-            LocalDateTime parsed = parseLastUpdated(row.getLastUpdated());
-            if (parsed != null && (latestDate == null || parsed.isAfter(latestDate))) {
-                latestDate = parsed;
-                latestRow = row;
-            }
-        }
-
-        DashboardSummary summary = new DashboardSummary();
-        summary.setTableCount(rows.size());
-        summary.setTotalRecords(totalRecords);
-        summary.setUnavailableCount(unavailableCount);
-        summary.setLatestUpdated(latestRow != null ? latestRow.getLastUpdated() : null);
-        summary.setLatestTableName(latestRow != null ? latestRow.getDisplayName() : null);
-        summary.setCached(!forceRefresh && cache.fromCache());
+        DashboardSummary summary = activityLogService.buildActivityOverview();
+        summary.setTableCount(tableDetailsService.getAllTableNames().size());
+        summary.setCached(false);
         return summary;
     }
 

@@ -4,6 +4,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -15,6 +16,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 
+import com.app.dto.DashboardSummary;
 import com.app.dto.TableStatusRow;
 import com.app.service.TableDetailsService;
 import com.app.service.TableStatusService;
@@ -43,15 +45,75 @@ public class TableStatusServiceImpl implements TableStatusService {
     @Value("${app.business-schema:hrms_bre}")
     private String businessSchema;
 
+    @Value("${app.table-status.cache-seconds:300}")
+    private long cacheSeconds;
+
+    private volatile CachedTableStatus cachedStatus;
+
     @Override
     public List<TableStatusRow> getMainTableStatus() {
-        List<String> tables = tableDetailsService.getAllTableNames();
-        List<TableStatusRow> rows = new ArrayList<>(tables.size());
-        for (String tableName : tables) {
-            rows.add(fetchStatus(tableName));
+        return getMainTableStatus(false);
+    }
+
+    @Override
+    public List<TableStatusRow> getMainTableStatus(boolean forceRefresh) {
+        return loadRows(forceRefresh).rows();
+    }
+
+    @Override
+    public DashboardSummary getDashboardSummary(boolean forceRefresh) {
+        CachedTableStatus cache = loadRows(forceRefresh);
+        List<TableStatusRow> rows = cache.rows();
+
+        long totalRecords = 0L;
+        int unavailableCount = 0;
+        TableStatusRow latestRow = null;
+        LocalDateTime latestDate = null;
+
+        for (TableStatusRow row : rows) {
+            long count = row.getRecordCount();
+            if (count >= 0) {
+                totalRecords += count;
+            } else {
+                unavailableCount += 1;
+            }
+
+            LocalDateTime parsed = parseLastUpdated(row.getLastUpdated());
+            if (parsed != null && (latestDate == null || parsed.isAfter(latestDate))) {
+                latestDate = parsed;
+                latestRow = row;
+            }
         }
-        logger.info("Table status loaded: {} tables from {}", rows.size(), businessSchema);
-        return rows;
+
+        DashboardSummary summary = new DashboardSummary();
+        summary.setTableCount(rows.size());
+        summary.setTotalRecords(totalRecords);
+        summary.setUnavailableCount(unavailableCount);
+        summary.setLatestUpdated(latestRow != null ? latestRow.getLastUpdated() : null);
+        summary.setLatestTableName(latestRow != null ? latestRow.getDisplayName() : null);
+        summary.setCached(!forceRefresh && cache.fromCache());
+        return summary;
+    }
+
+    private CachedTableStatus loadRows(boolean forceRefresh) {
+        long ttlMs = Math.max(0L, cacheSeconds) * 1000L;
+        CachedTableStatus snapshot = cachedStatus;
+        long now = System.currentTimeMillis();
+
+        if (!forceRefresh && ttlMs > 0 && snapshot != null && now - snapshot.loadedAtMs() < ttlMs) {
+            return new CachedTableStatus(snapshot.rows(), snapshot.loadedAtMs(), true);
+        }
+
+        List<String> tables = tableDetailsService.getAllTableNames();
+        List<TableStatusRow> rows = tables.parallelStream()
+                .map(this::fetchStatus)
+                .sorted(Comparator.comparing(TableStatusRow::getDisplayName, String.CASE_INSENSITIVE_ORDER))
+                .toList();
+
+        logger.info("Table status loaded: {} tables from {} (refresh={})", rows.size(), businessSchema, forceRefresh);
+        CachedTableStatus fresh = new CachedTableStatus(rows, now, false);
+        cachedStatus = fresh;
+        return fresh;
     }
 
     private TableStatusRow fetchStatus(String tableName) {
@@ -75,10 +137,6 @@ public class TableStatusServiceImpl implements TableStatusService {
         return toLong(row.get("record_count"));
     }
 
-    /**
-     * Main tables in hrms_bre may use UPDATED_DATETIME or LAST_UPDATED_DATE (metadata in
-     * decision_rules_hrmsbre often lists master/staging column names). Try each known name.
-     */
     private String queryLastUpdated(String tableName) {
         for (String column : UPDATED_COLUMN_PRIORITY) {
             try {
@@ -114,6 +172,17 @@ public class TableStatusServiceImpl implements TableStatusService {
         return label.toUpperCase();
     }
 
+    private static LocalDateTime parseLastUpdated(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return LocalDateTime.parse(value, LAST_UPDATED_FORMAT);
+        } catch (Exception ex) {
+            return null;
+        }
+    }
+
     private static void requireSafeIdentifier(String name) {
         if (name == null || !SAFE_IDENTIFIER.matcher(name).matches()) {
             throw new IllegalArgumentException("Invalid database object name: " + name);
@@ -147,5 +216,8 @@ public class TableStatusServiceImpl implements TableStatusService {
             return null;
         }
         return dateTime.format(LAST_UPDATED_FORMAT);
+    }
+
+    private record CachedTableStatus(List<TableStatusRow> rows, long loadedAtMs, boolean fromCache) {
     }
 }

@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/hrms-head :: hrmsHead('History Data')}"></head>
+<head th:replace="~{fragments/hrms-head :: hrmsHead('History Data', true)}"></head>
 <body class="font-sans bg-background text-on-surface">
 <th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('history-data')}"></th:block>
 <main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
@@ -99,7 +99,7 @@
     </div>
 </main>
 <th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
-<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts(true)}"></th:block>
 <script th:src="@{/js/hrms-api-error.js}"></script>
 <script th:src="@{/js/hrms-table-select.js}"></script>
 <script th:src="@{/js/hrms-history-data.js}"></script>

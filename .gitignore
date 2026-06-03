@@ -37,3 +37,4 @@ build/
 src/main/resources/application-mysql.properties
 src/main/resources/application-local-mysql.properties
 Dump*/
+frontend/node_modules/

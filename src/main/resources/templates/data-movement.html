@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-<head th:replace="~{fragments/hrms-head :: hrmsHead('Data Movement')}"></head>
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Data Movement', false)}"></head>
 <body class="font-sans bg-background text-on-surface">
 <th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('data-movement')}"></th:block>
 <main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
@@ -92,7 +92,7 @@
     </div>
 </main>
 <th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
-<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts(false)}"></th:block>
 <script th:src="@{/js/hrms-upload-feedback.js}"></script>
 <script th:src="@{/js/hrms-data-movement.js}"></script>
 </body>

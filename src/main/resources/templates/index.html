@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
-<head th:replace="~{fragments/hrms-head :: hrmsHead('Dashboard')}"></head>
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Dashboard', false)}"></head>
 <body class="font-sans bg-background text-on-surface">
 <th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('dashboard')}"></th:block>
 <main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
@@ -138,7 +138,7 @@
     </div>
 </main>
 <th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
-<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts(false)}"></th:block>
 <script th:src="@{/js/hrms-dashboard.js}"></script>
 </body>
 </html>

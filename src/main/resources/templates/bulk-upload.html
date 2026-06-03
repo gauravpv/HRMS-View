@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
-<head th:replace="~{fragments/hrms-head :: hrmsHead('Bulk Upload')}"></head>
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Bulk Upload', false)}"></head>
 <body class="font-sans bg-background text-on-surface">
 <span id="username" class="hidden" th:text="${session.userName}"></span>
 <th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('bulk-upload')}"></th:block>
@@ -70,7 +70,7 @@
     </div>
 </main>
 <th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
-<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts(false)}"></th:block>
 <script th:src="@{/js/hrms-api-error.js}"></script>
 <script th:src="@{/js/hrms-upload-feedback.js}"></script>
 <script th:src="@{/js/hrms-table-select.js}"></script>

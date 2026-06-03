@@ -117,13 +117,18 @@
         setEmptyState(false);
     }
 
-    function loadTableStatus() {
+    function loadTableStatus(forceRefresh) {
         setEmptyState(true, 'Loading table status…', 'Fetching counts from the database.');
         $('#table-status-shell').css('visibility', 'hidden');
 
+        var url = '/api/user/tableStatus';
+        if (forceRefresh) {
+            url += '?refresh=true';
+        }
+
         $.ajax({
             type: 'GET',
-            url: '/api/user/tableStatus',
+            url: url,
             dataType: 'json',
             cache: false,
             timeout: 120000,
@@ -159,8 +164,8 @@
     }
 
     $('#table-status-refresh').on('click', function () {
-        loadTableStatus();
+        loadTableStatus(true);
     });
 
-    loadTableStatus();
+    loadTableStatus(false);
 })();

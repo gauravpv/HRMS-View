@@ -21,6 +21,10 @@ public final class ApiResponses {
     }
 
     public static ResponseEntity<AjaxBody> ok(String message, List<?> result) {
+        return okValue(message, result);
+    }
+
+    public static ResponseEntity<AjaxBody> okValue(String message, Object result) {
         AjaxBody body = new AjaxBody();
         body.setMsg(message);
         body.setResult(result);

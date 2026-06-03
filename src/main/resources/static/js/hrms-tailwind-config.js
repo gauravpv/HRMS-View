@@ -1,4 +1,4 @@
-/* Tailwind theme — must match newFrontend.html */
+/* Build-time Tailwind theme — source of truth is frontend/tailwind.config.js */
 tailwind.config = {
     darkMode: "class",
     theme: {

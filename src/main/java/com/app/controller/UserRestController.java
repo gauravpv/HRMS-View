@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import com.app.dto.AjaxBody;
+import com.app.dto.DashboardSummary;
 import com.app.dto.StringListDto;
 import com.app.dto.TableStatusRow;
 import com.app.exception.HrmsApiException;
@@ -54,14 +55,27 @@ public class UserRestController {
     private String excelValidation;
 
     @GetMapping("/tableStatus")
-    public ResponseEntity<?> tableStatus() {
+    public ResponseEntity<?> tableStatus(
+            @RequestParam(name = "refresh", defaultValue = "false") boolean refresh) {
         try {
-            List<TableStatusRow> rows = tableStatusService.getMainTableStatus();
+            List<TableStatusRow> rows = tableStatusService.getMainTableStatus(refresh);
             return ApiResponses.ok("Table status retrieved", rows);
         } catch (Exception ex) {
             logger.error("Table status request failed", ex);
             return ApiResponses.clientError(
                     "Unable to load table status. Check database connectivity and table_details access.");
+        }
+    }
+
+    @GetMapping("/dashboardSummary")
+    public ResponseEntity<?> dashboardSummary(
+            @RequestParam(name = "refresh", defaultValue = "false") boolean refresh) {
+        try {
+            DashboardSummary summary = tableStatusService.getDashboardSummary(refresh);
+            return ApiResponses.okValue("Dashboard summary retrieved", summary);
+        } catch (Exception ex) {
+            logger.error("Dashboard summary request failed", ex);
+            return ApiResponses.clientError("Unable to load dashboard summary.");
         }
     }
 

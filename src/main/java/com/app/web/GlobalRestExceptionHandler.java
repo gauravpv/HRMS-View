@@ -18,7 +18,11 @@ public class GlobalRestExceptionHandler {
 
     @ExceptionHandler(HrmsApiException.class)
     public ResponseEntity<AjaxError> handleApiException(HrmsApiException ex) {
-        logger.warn("API request rejected: {}", ex.getMessage());
+        if (ex.isUserFacingValidation() || ex.getClientMessage().equals(ex.getMessage())) {
+            logger.warn("API request rejected: {}", ex.getMessage());
+        } else {
+            logger.error("API request failed (user message: {}): {}", ex.getClientMessage(), ex.getMessage(), ex);
+        }
         return ApiResponses.clientError(ex);
     }
 

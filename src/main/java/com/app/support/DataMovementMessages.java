@@ -7,7 +7,8 @@ public final class DataMovementMessages {
     private DataMovementMessages() {
     }
 
-    public static String fromProcedureFailure(String tableName, String procedure, DataAccessException ex) {
+    /** Full detail for server logs only — never show this text in the UI. */
+    public static String formatForLog(String tableName, String procedure, DataAccessException ex) {
         String raw = rootMessage(ex);
         String lower = raw != null ? raw.toLowerCase() : "";
 

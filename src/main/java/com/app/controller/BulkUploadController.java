@@ -38,6 +38,7 @@ import com.app.exception.HrmsApiException;
 import com.app.service.ActivityLogService;
 import com.app.service.GeneralService;
 import com.app.support.BulkUploadMessages;
+import com.app.support.UserFacingMessages;
 import com.app.utility.CommonUtils;
 import com.app.utility.StringUtils;
 import com.app.web.ApiResponses;
@@ -194,13 +195,13 @@ public class BulkUploadController {
         } catch (HrmsApiException ex) {
             logger.error("Upload rejected for {}", tableName, ex);
             progress.status = "ERROR";
-            progress.message = ex.getMessage();
+            progress.message = ex.getClientMessage();
             progress.issues.clear();
             progress.issues.addAll(ex.getIssues());
         } catch (Exception ex) {
             logger.error("Error during async upload for {}", tableName, ex);
             progress.status = "ERROR";
-            progress.message = "Upload stopped because of an unexpected error. Please try again or contact admin.";
+            progress.message = UserFacingMessages.UPLOAD_FAILED;
         }
     }
 

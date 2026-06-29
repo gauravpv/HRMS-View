@@ -45,7 +45,7 @@ public final class ApiResponses {
 
     public static ResponseEntity<AjaxError> clientError(HrmsApiException ex) {
         AjaxError err = new AjaxError();
-        err.setErrorMsg(ex.getMessage());
+        err.setErrorMsg(ex.getClientMessage());
         err.setTime(new Timestamp(System.currentTimeMillis()));
         err.setRow(ex.getRow());
         err.setColumn(ex.getColumn());

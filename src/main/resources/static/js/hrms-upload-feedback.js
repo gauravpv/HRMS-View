@@ -82,9 +82,10 @@ function hrmsShowUploadResult(options) {
 
 function hrmsShowUploadErrorFromXhr(xhr, fallbackTitle) {
     var body = xhr && xhr.responseJSON ? xhr.responseJSON : {};
+    var message = body.errorMsg || hrmsAjaxErrorMessage(xhr);
     hrmsShowUploadResult({
         title: fallbackTitle || "Upload failed",
-        message: body.errorMsg || hrmsAjaxErrorMessage(xhr),
+        message: message,
         issues: hrmsExtractUploadIssuesFromXhr(xhr),
         isError: true
     });

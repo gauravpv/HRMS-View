@@ -18,6 +18,7 @@ import com.app.dto.BulkInsertResult;
 import com.app.exception.HrmsApiException;
 import com.app.support.BulkUploadMessages;
 import com.app.support.DataMovementMessages;
+import com.app.support.UserFacingMessages;
 import com.app.support.DataMovementProcedures;
 import com.app.model.RequestResponseLogDetails;
 import com.app.service.GeneralService;
@@ -256,8 +257,10 @@ public class GeneralServiceImpl implements GeneralService {
             }, new ArrayList<>());
             return "Table truncated!";
         } catch (DataAccessException ex) {
-            logger.error("Truncate failed for table {}", tableName, ex);
-            throw new HrmsApiException("Unable to truncate table.");
+            logger.error("Truncate failed for table {}: {}", tableName, ex.getMessage(), ex);
+            throw HrmsApiException.internal(
+                    "Truncate failed for table " + tableName + ": " + ex.getMessage(),
+                    UserFacingMessages.PRE_UPLOAD_FAILED);
         }
     }
 
@@ -270,6 +273,10 @@ public class GeneralServiceImpl implements GeneralService {
     }
 
     private void executeProcedure(String tableName, String procedure) {
+        executeProcedure(tableName, procedure, UserFacingMessages.PRE_UPLOAD_FAILED);
+    }
+
+    private void executeProcedure(String tableName, String procedure, String clientMessage) {
         String callSql = "{call " + procedure + "()}";
         long started = System.currentTimeMillis();
         logger.info("Data movement calling procedure={} table={}", procedure, tableName);
@@ -278,9 +285,12 @@ public class GeneralServiceImpl implements GeneralService {
             logger.info("Data movement completed procedure={} table={} durationMs={}",
                     procedure, tableName, System.currentTimeMillis() - started);
         } catch (DataAccessException ex) {
-            logger.error("Data movement failed procedure={} table={} durationMs={}",
-                    procedure, tableName, System.currentTimeMillis() - started, ex);
-            throw new HrmsApiException(DataMovementMessages.fromProcedureFailure(tableName, procedure, ex));
+            logger.error("Data movement failed procedure={} table={} durationMs={}: {}",
+                    procedure, tableName, System.currentTimeMillis() - started,
+                    DataMovementMessages.formatForLog(tableName, procedure, ex), ex);
+            throw HrmsApiException.internal(
+                    DataMovementMessages.formatForLog(tableName, procedure, ex),
+                    clientMessage);
         }
     }
 
@@ -298,8 +308,10 @@ public class GeneralServiceImpl implements GeneralService {
             }
             return "No data";
         } catch (DataAccessException ex) {
-            logger.error("Data existence check failed for {}", tableName, ex);
-            throw new HrmsApiException("Unable to verify table data.");
+            logger.error("Data existence check failed for {}: {}", tableName, ex.getMessage(), ex);
+            throw HrmsApiException.internal(
+                    "Data existence check failed for " + tableName + ": " + ex.getMessage(),
+                    UserFacingMessages.OPERATION_FAILED);
         }
     }
 
@@ -325,7 +337,7 @@ public class GeneralServiceImpl implements GeneralService {
             String procedure = includeHistoryStep
                     ? DataMovementProcedures.moveToMaster(name)
                     : DataMovementProcedures.moveToMain(name);
-            executeProcedure(name, procedure);
+            executeProcedure(name, procedure, UserFacingMessages.DATA_MOVEMENT_FAILED);
         }
         return includeHistoryStep ? "Moved all data to Master" : "Moved all data to Main";
     }

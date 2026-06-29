@@ -18,6 +18,6 @@ public interface TableDetailsService {
     /** Resolve a UI/API table name to a row in table_details (handles _master/_temp/_history suffixes). */
     String resolveRegisteredTableName(String tableName);
 
-    /** Physical master table name passed to history stored procedures. */
+    /** Physical history table name passed to history stored procedures (e.g. city_master_history). */
     String toHistoryProcedureTableName(String registeredTableName);
 }

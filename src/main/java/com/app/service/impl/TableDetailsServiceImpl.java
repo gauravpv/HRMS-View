@@ -97,13 +97,16 @@ public class TableDetailsServiceImpl implements TableDetailsService {
             return name;
         }
         String lower = name.toLowerCase(Locale.ROOT);
-        if (lower.endsWith(MASTER_SUFFIX)) {
+        if (lower.endsWith(HISTORY_SUFFIX)) {
             return name;
         }
-        if (lower.endsWith(TEMP_SUFFIX)) {
-            return name.substring(0, name.length() - TEMP_SUFFIX.length()) + MASTER_SUFFIX;
+        String physicalBase;
+        if (lower.endsWith(MASTER_SUFFIX) || lower.endsWith(TEMP_SUFFIX)) {
+            physicalBase = name;
+        } else {
+            physicalBase = name + MASTER_SUFFIX;
         }
-        return name + MASTER_SUFFIX;
+        return physicalBase + HISTORY_SUFFIX;
     }
 
     private static List<String> registrationCandidates(String base) {

@@ -100,7 +100,7 @@ function search() {
             var seen = {};
             var added = 0;
             data.result.forEach(function (item) {
-                var id = hrmsRowField(item, ['HISTORY_ID', 'history_id', 'ID', 'id']);
+                var id = hrmsRowField(item, ['HISTORY_ID', 'history_id', 'HID', 'hid', 'ID', 'id']);
                 if (id == null || id === '') {
                     return;
                 }

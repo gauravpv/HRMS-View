@@ -37,6 +37,7 @@ import com.app.service.TableDetailsService;
 import com.app.service.TableStatusService;
 import com.app.utility.CommonUtils;
 import com.app.utility.StringUtils;
+import com.app.dto.HistorySnapshotDto;
 import com.app.support.HistorySnapshotMapper;
 import com.app.web.ApiResponses;
 
@@ -115,13 +116,17 @@ public class UserRestController {
             @RequestParam String toDate) {
         logger.info("historyTableId tabName={} from={} to={}", tabName, fromDate, toDate);
         List<Object> list = genService.getHistoryId(tabName, fromDate, toDate);
-        List<Map<String, Object>> snapshots = HistorySnapshotMapper.normalize(list);
+        List<HistorySnapshotDto> snapshots = HistorySnapshotMapper.normalize(list);
         if (!list.isEmpty() && snapshots.isEmpty()) {
             Object sample = list.get(0);
             logger.warn("historyTableId tabName={} rawRows={} normalized=0 sampleType={} sample={}",
                     tabName, list.size(), sample != null ? sample.getClass().getSimpleName() : "null", sample);
+        } else if (!snapshots.isEmpty()) {
+            HistorySnapshotDto first = snapshots.get(0);
+            logger.info("historyTableId tabName={} snapshots={} firstId={} firstDate={}",
+                    tabName, snapshots.size(), first.getHistoryId(), first.getSnapshotDate());
         } else {
-            logger.info("historyTableId tabName={} snapshots={}", tabName, snapshots.size());
+            logger.info("historyTableId tabName={} snapshots=0", tabName);
         }
         return ApiResponses.ok("List retrieved", snapshots);
     }

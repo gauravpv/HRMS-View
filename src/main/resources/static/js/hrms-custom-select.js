@@ -155,6 +155,9 @@
     function initWrap(wrap) {
         var select = wrap.querySelector('select.hrms-select');
         if (!select) return;
+        if (wrap.dataset.hrmsNative === 'true') {
+            return;
+        }
         if (wrap.dataset.hrmsCustomized === '1') {
             refreshWrap(wrap);
             return;

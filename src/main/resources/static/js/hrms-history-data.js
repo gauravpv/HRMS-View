@@ -34,6 +34,13 @@ function hrmsCoerceApiRows(result) {
     if (!result) {
         return [];
     }
+    if (typeof result === 'string') {
+        try {
+            result = JSON.parse(result);
+        } catch (e) {
+            return [];
+        }
+    }
     if (Array.isArray(result)) {
         return result;
     }
@@ -44,6 +51,50 @@ function hrmsCoerceApiRows(result) {
             .map(function (k) { return result[k]; });
     }
     return [];
+}
+
+function hrmsSnapshotId(item) {
+    var id = hrmsRowField(item, ['historyId', 'HISTORY_ID', 'history_id', 'HID', 'hid', 'ID', 'id']);
+    if (id == null || id === '') {
+        id = hrmsFirstRowValue(item);
+    }
+    return id;
+}
+
+function hrmsSnapshotDate(item) {
+    return hrmsRowField(item, [
+        'snapshotDate', 'DATE', 'date', 'HISTORY_DATE', 'history_date',
+        'CREATED_DATE', 'created_date', 'SNAPSHOT_DATE', 'snapshot_date'
+    ]);
+}
+
+function populateSnapshotDropdown(rows) {
+    var dropdown = $('#historyId');
+    dropdown.empty().append($('<option>', {
+        value: '',
+        text: 'Choose snapshot…',
+        disabled: true,
+        selected: true
+    }));
+
+    var seen = {};
+    var added = 0;
+    rows.forEach(function (item) {
+        var id = hrmsSnapshotId(item);
+        if (id == null || id === '') {
+            return;
+        }
+        var date = hrmsSnapshotDate(item);
+        var key = String(id) + '|' + String(date != null ? date : '');
+        if (seen[key]) {
+            return;
+        }
+        seen[key] = true;
+        var label = date != null && date !== '' ? id + ' | ' + date : String(id);
+        dropdown.append($('<option>', { value: String(id), text: label }));
+        added += 1;
+    });
+    return added;
 }
 
 function hrmsFirstRowValue(row) {
@@ -119,11 +170,7 @@ function showHistoryResultsTable() {
 }
 
 function resetSnapshotDropdown() {
-    var dropdown = $('#historyId');
-    dropdown.empty().append($('<option>', { value: '', text: 'Choose snapshot…', disabled: true, selected: true }));
-    if (window.HrmsCustomSelect && dropdown[0]) {
-        HrmsCustomSelect.refreshWrap(dropdown[0].closest('.hrms-select-wrap'));
-    }
+    populateSnapshotDropdown([]);
 }
 
 function search() {
@@ -155,31 +202,7 @@ function search() {
     }).done(function (data) {
         var rows = hrmsCoerceApiRows(data && data.result);
         if (rows.length) {
-            var dropdown = $('#historyId');
-            dropdown.empty().append($('<option>', { value: '', text: 'Choose snapshot…', disabled: true, selected: true }));
-            var seen = {};
-            var added = 0;
-            rows.forEach(function (item) {
-                var id = hrmsRowField(item, ['HISTORY_ID', 'history_id', 'HID', 'hid', 'ID', 'id']);
-                if (id == null || id === '') {
-                    id = hrmsFirstRowValue(item);
-                }
-                if (id == null || id === '') {
-                    return;
-                }
-                var date = hrmsRowField(item, ['DATE', 'date', 'HISTORY_DATE', 'history_date', 'CREATED_DATE', 'created_date', 'SNAPSHOT_DATE', 'snapshot_date']);
-                var key = String(id) + '|' + String(date != null ? date : '');
-                if (seen[key]) {
-                    return;
-                }
-                seen[key] = true;
-                var label = date != null && date !== '' ? id + ' | ' + date : String(id);
-                dropdown.append($('<option>', { value: String(id), text: label }));
-                added += 1;
-            });
-            if (window.HrmsCustomSelect && dropdown[0]) {
-                HrmsCustomSelect.refreshWrap(dropdown[0].closest('.hrms-select-wrap'));
-            }
+            var added = populateSnapshotDropdown(rows);
             if (added > 0) {
                 setHistoryEmptyState(false);
             } else {
@@ -258,6 +281,14 @@ function syncDateDisplay(input) {
 
 document.addEventListener('DOMContentLoaded', function () {
     fillTableNameSelect('#tableTemp', '#tableName', tabList, tabTempList);
+
+    var historySelect = document.getElementById('historyId');
+    if (historySelect && window.HrmsCustomSelect) {
+        var historyWrap = historySelect.closest('.hrms-select-wrap');
+        if (historyWrap) {
+            HrmsCustomSelect.destroyWrap(historyWrap);
+        }
+    }
 
     document.querySelectorAll('.hrms-date-wrap').forEach(function (wrap) {
         var input = wrap.querySelector('.hrms-date-input');

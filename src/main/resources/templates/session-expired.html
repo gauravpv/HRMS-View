@@ -13,8 +13,7 @@
             Your session ended after <span th:text="${sessionTimeoutMinutes}">30</span> minutes of inactivity.
             Please sign in again to continue.
         </p>
-        <a th:if="${azureEnabled}" th:href="@{/oauth2/authorization/azure}" class="hrms-btn hrms-btn-primary">Sign in</a>
-        <a th:unless="${azureEnabled}" th:href="@{/login}" class="hrms-btn hrms-btn-primary">Sign in</a>
+        <a th:href="@{/login}" class="hrms-btn hrms-btn-primary">Sign in</a>
     </div>
 </article>
 </body>

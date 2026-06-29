@@ -33,8 +33,7 @@ build/
 ### VS Code ###
 .vscode/
 
-### Local / environment-specific config (credentials) ###
-src/main/resources/application-mysql.properties
-src/main/resources/application-local-mysql.properties
+### Local / environment-specific config (legacy — use application.properties only) ###
+bin/
 Dump*/
 frontend/node_modules/

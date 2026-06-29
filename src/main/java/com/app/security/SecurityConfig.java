@@ -98,28 +98,28 @@ public class SecurityConfig {
                 .requestMatchers("/api/user/**").hasAnyAuthority(HrmsAuthorities.APP_ACCESS)
                 .anyRequest().authenticated());
 
+        http.authenticationProvider(daoAuthenticationProvider())
+            .formLogin(form -> form
+                .loginPage("/login")
+                .loginProcessingUrl("/login")
+                .usernameParameter("username")
+                .passwordParameter("password")
+                .successHandler(formLoginAuthenticationSuccessHandler)
+                .failureHandler((request, response, exception) -> {
+                    logger.warn("Form login failed from {}: {}", request.getRemoteAddr(), exception.getMessage());
+                    response.sendRedirect(request.getContextPath() + "/login?error=true");
+                })
+                .permitAll());
+
         if (azureEnabled) {
-            logger.info("Security: Azure AD OAuth2 login enabled");
+            logger.info("Security: Azure AD OAuth2 + DB form login enabled");
             http.oauth2Login(oauth2 -> oauth2
                 .loginPage("/login")
                 .userInfoEndpoint(userInfo -> userInfo
                     .oidcUserService(new AzureOidcUserService(userRepository, roleRepository)))
                 .successHandler(customAuthenticationSuccessHandler));
         } else {
-            logger.info("Security: form login enabled");
-            http
-                .authenticationProvider(daoAuthenticationProvider())
-                .formLogin(form -> form
-                    .loginPage("/login")
-                    .loginProcessingUrl("/login")
-                    .usernameParameter("username")
-                    .passwordParameter("password")
-                    .successHandler(formLoginAuthenticationSuccessHandler)
-                    .failureHandler((request, response, exception) -> {
-                        logger.warn("Form login failed from {}: {}", request.getRemoteAddr(), exception.getMessage());
-                        response.sendRedirect(request.getContextPath() + "/login?error=true");
-                    })
-                    .permitAll());
+            logger.info("Security: DB form login only (Azure disabled)");
         }
 
         http.addFilterBefore(new PendingAccountFilter(userRepository), AuthorizationFilter.class);

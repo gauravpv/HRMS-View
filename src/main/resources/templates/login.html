@@ -35,9 +35,10 @@
                     <a th:href="@{/oauth2/authorization/azure}" class="hrms-login-ms-btn">
                         Sign in with Microsoft
                     </a>
+                    <p class="hrms-login-divider" aria-hidden="true"><span>or</span></p>
                 </div>
 
-                <form th:if="${!azureEnabled}" th:action="@{/login}" method="post" class="hrms-login-form">
+                <form th:action="@{/login}" method="post" class="hrms-login-form">
                     <div class="hrms-field">
                         <label for="username">Username or email</label>
                         <input class="hrms-input" id="username" name="username" type="text" required

@@ -36,7 +36,7 @@ function search() {
         cache: false,
         timeout: 600000,
         success: function (data) {
-            $("#loader").modal("hide");
+            hrmsForceHideLoader();
             if (data && data.result && data.result.length) {
                 try {
                     searchTableData = data.result;
@@ -57,7 +57,7 @@ function search() {
             }
         },
         error: function (xhr) {
-            $("#loader").modal("hide");
+            hrmsForceHideLoader();
             setSearchEmptyState(true);
             hrmsShowApiError("no-data-message", xhr, hrmsAjaxErrorMessage(xhr));
             $("#table-div").css("visibility", "hidden");

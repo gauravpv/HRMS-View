@@ -104,9 +104,17 @@ public class UserRestController {
     @GetMapping("/historyTableData")
     public ResponseEntity<AjaxBody> historyTableData(@RequestParam String tabName, @RequestParam int historyId) {
         logger.info("historyTableData tabName={} historyId={}", tabName, historyId);
-        List<Object> list = genService.getHistoryData(tabName, historyId);
-        logger.info("historyTableData tabName={} historyId={} rows={}", tabName, historyId, list.size());
-        return ApiResponses.ok("List retrieved", list);
+        try {
+            List<Object> list = genService.getHistoryData(tabName, historyId);
+            logger.info("historyTableData tabName={} historyId={} rows={}", tabName, historyId, list.size());
+            return ApiResponses.ok("List retrieved", list);
+        } catch (HrmsApiException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            logger.error("historyTableData failed tabName={} historyId={}", tabName, historyId, ex);
+            throw HrmsApiException.internal(
+                    "historyTableData failed tabName=" + tabName + " historyId=" + historyId + ": " + ex.getMessage());
+        }
     }
 
     @GetMapping("/historyTableId")
@@ -115,20 +123,27 @@ public class UserRestController {
             @RequestParam String fromDate,
             @RequestParam String toDate) {
         logger.info("historyTableId tabName={} from={} to={}", tabName, fromDate, toDate);
-        List<Object> list = genService.getHistoryId(tabName, fromDate, toDate);
-        List<HistorySnapshotDto> snapshots = HistorySnapshotMapper.normalize(list);
-        if (!list.isEmpty() && snapshots.isEmpty()) {
-            Object sample = list.get(0);
-            logger.warn("historyTableId tabName={} rawRows={} normalized=0 sampleType={} sample={}",
-                    tabName, list.size(), sample != null ? sample.getClass().getSimpleName() : "null", sample);
-        } else if (!snapshots.isEmpty()) {
-            HistorySnapshotDto first = snapshots.get(0);
-            logger.info("historyTableId tabName={} snapshots={} firstId={} firstDate={}",
-                    tabName, snapshots.size(), first.getHistoryId(), first.getSnapshotDate());
-        } else {
-            logger.info("historyTableId tabName={} snapshots=0", tabName);
+        try {
+            List<Object> list = genService.getHistoryId(tabName, fromDate, toDate);
+            List<HistorySnapshotDto> snapshots = HistorySnapshotMapper.normalize(list);
+            if (!list.isEmpty() && snapshots.isEmpty()) {
+                Object sample = list.get(0);
+                logger.warn("historyTableId tabName={} rawRows={} normalized=0 sampleType={} sample={}",
+                        tabName, list.size(), sample != null ? sample.getClass().getSimpleName() : "null", sample);
+            } else if (!snapshots.isEmpty()) {
+                HistorySnapshotDto first = snapshots.get(0);
+                logger.info("historyTableId tabName={} snapshots={} firstId={} firstDate={}",
+                        tabName, snapshots.size(), first.getHistoryId(), first.getSnapshotDate());
+            } else {
+                logger.info("historyTableId tabName={} snapshots=0", tabName);
+            }
+            return ApiResponses.ok("List retrieved", snapshots);
+        } catch (HrmsApiException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            logger.error("historyTableId failed tabName={} from={} to={}", tabName, fromDate, toDate, ex);
+            throw HrmsApiException.internal("historyTableId failed tabName=" + tabName + ": " + ex.getMessage());
         }
-        return ApiResponses.ok("List retrieved", snapshots);
     }
 
     @PostMapping("/saveTempData")

@@ -1,10 +1,15 @@
 package com.app.support;
 
+import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
 import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.app.dto.HistorySnapshotDto;
 
@@ -12,6 +17,9 @@ import com.app.dto.HistorySnapshotDto;
  * Maps stored-procedure snapshot rows to a stable JSON shape for the History page.
  */
 public final class HistorySnapshotMapper {
+
+    private static final Logger logger = LogManager.getLogger(HistorySnapshotMapper.class);
+    private static final SimpleDateFormat SQL_DATE_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     private static final String[] ID_FIELDS = {
             "HISTORY_ID", "history_id", "historyId", "HID", "hid", "ID", "id"
@@ -31,9 +39,14 @@ public final class HistorySnapshotMapper {
         }
         List<HistorySnapshotDto> out = new ArrayList<>(rows.size());
         for (Object row : rows) {
-            HistorySnapshotDto snap = toSnapshot(row);
-            if (snap != null) {
-                out.add(snap);
+            try {
+                HistorySnapshotDto snap = toSnapshot(row);
+                if (snap != null) {
+                    out.add(snap);
+                }
+            } catch (RuntimeException ex) {
+                logger.warn("Skipping unparseable history snapshot row type={}: {}",
+                        row != null ? row.getClass().getName() : "null", ex.toString());
             }
         }
         return out;
@@ -48,9 +61,10 @@ public final class HistorySnapshotMapper {
                     list.size() > 1 ? list.get(1) : null);
         }
         if (row != null && row.getClass().isArray()) {
-            Object[] values = (Object[]) row;
-            return fromSequence(values.length > 0 ? values[0] : null,
-                    values.length > 1 ? values[1] : null);
+            int length = Array.getLength(row);
+            Object first = length > 0 ? Array.get(row, 0) : null;
+            Object second = length > 1 ? Array.get(row, 1) : null;
+            return fromSequence(first, second);
         }
         return fromSequence(row, null);
     }
@@ -68,13 +82,25 @@ public final class HistorySnapshotMapper {
     }
 
     private static HistorySnapshotDto fromSequence(Object id, Object date) {
-        if (!hasValue(id)) {
+        String historyId = normalizeId(id);
+        if (historyId == null) {
             return null;
         }
         HistorySnapshotDto dto = new HistorySnapshotDto();
-        dto.setHistoryId(id);
+        dto.setHistoryId(historyId);
         dto.setSnapshotDate(formatScalar(date));
         return dto;
+    }
+
+    private static String normalizeId(Object value) {
+        if (!hasValue(value)) {
+            return null;
+        }
+        if (value instanceof Number number) {
+            return number.toString();
+        }
+        String text = value.toString().trim();
+        return text.isEmpty() ? null : text;
     }
 
     private static Object pickField(Map<?, ?> map, String[] names) {
@@ -120,11 +146,17 @@ public final class HistorySnapshotMapper {
         if (value == null) {
             return "";
         }
-        if (value instanceof TemporalAccessor temporal) {
-            return temporal.toString();
-        }
-        if (value instanceof Date date) {
-            return date.toInstant().toString();
+        try {
+            if (value instanceof TemporalAccessor temporal) {
+                return temporal.toString();
+            }
+            if (value instanceof Date date) {
+                synchronized (SQL_DATE_FORMAT) {
+                    return SQL_DATE_FORMAT.format(date);
+                }
+            }
+        } catch (RuntimeException ex) {
+            logger.debug("Could not format snapshot date value type={}", value.getClass().getName());
         }
         return value.toString();
     }

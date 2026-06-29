@@ -1,35 +1,5 @@
 var historyTableData = [];
 
-function hrmsCleanupModalBackdrops() {
-    if ($('.modal.show').length === 0) {
-        $('body').removeClass('modal-open').css('padding-right', '');
-        $('.modal-backdrop').remove();
-    }
-}
-
-function hideHistoryLoader(next) {
-    var $loader = $('#loader');
-    var done = false;
-    function finish() {
-        if (done) {
-            return;
-        }
-        done = true;
-        hrmsCleanupModalBackdrops();
-        if (typeof next === 'function') {
-            next();
-        }
-    }
-    $loader.one('hidden.bs.modal', finish);
-    $loader.modal('hide');
-    setTimeout(function () {
-        if ($loader.hasClass('show')) {
-            $loader.removeClass('show').attr('aria-hidden', 'true').hide();
-        }
-        finish();
-    }, 500);
-}
-
 function hrmsCoerceApiRows(result) {
     if (!result) {
         return [];
@@ -189,29 +159,37 @@ function search() {
     }
     clearHistoryResults();
     resetSnapshotDropdown();
-    $("#loader").modal('show');
-    $("#historyIdRow").css("visibility", "visible");
+    setHistoryEmptyState(false);
+    $('#loader').modal('show');
+    $('#historyIdRow').css('visibility', 'visible');
 
     $.ajax({
-        type: "GET",
-        url: "/api/user/historyTableId?tabName=" + encodeURIComponent(baseTable)
-            + "&fromDate=" + encodeURIComponent($("#fromDate").val())
-            + "&toDate=" + encodeURIComponent($("#toDate").val()),
-        dataType: "json",
+        type: 'GET',
+        url: '/api/user/historyTableId?tabName=' + encodeURIComponent(baseTable)
+            + '&fromDate=' + encodeURIComponent($('#fromDate').val())
+            + '&toDate=' + encodeURIComponent($('#toDate').val()),
+        dataType: 'json',
         timeout: 600000
     }).done(function (data) {
-        var rows = hrmsCoerceApiRows(data && data.result);
-        if (rows.length) {
-            var added = populateSnapshotDropdown(rows);
-            if (added > 0) {
-                setHistoryEmptyState(false);
+        try {
+            var rows = hrmsCoerceApiRows(data && data.result);
+            if (rows.length) {
+                var added = populateSnapshotDropdown(rows);
+                if (added > 0) {
+                    setHistoryEmptyState(false);
+                } else {
+                    setHistoryEmptyState(true, 'Snapshots were returned but could not be read. Contact your administrator.');
+                }
             } else {
-                setHistoryEmptyState(true, 'Snapshots were returned but could not be read. Contact your administrator.');
+                clearHistoryResults();
+                resetSnapshotDropdown();
+                setHistoryEmptyState(true, 'No snapshots in this date range. Try wider dates.');
             }
-        } else {
+        } catch (e) {
+            console.error('Failed to process snapshot response', e);
             clearHistoryResults();
             resetSnapshotDropdown();
-            setHistoryEmptyState(true, 'No snapshots in this date range. Try wider dates.');
+            setHistoryEmptyState(true, 'Unable to load snapshots. Please contact admin.');
         }
     }).fail(function (xhr) {
         clearHistoryResults();
@@ -219,7 +197,7 @@ function search() {
         setHistoryEmptyState(true);
         hrmsShowApiError('no-data-message', xhr, hrmsAjaxErrorMessage(xhr));
     }).always(function () {
-        hideHistoryLoader();
+        hrmsForceHideLoader();
     });
 }
 
@@ -231,36 +209,36 @@ function searchHistory() {
         return;
     }
 
-    $("#loader").modal('show');
+    $('#loader').modal('show');
     $.ajax({
-        type: "GET",
-        url: "/api/user/historyTableData?tabName=" + encodeURIComponent(baseTable)
-            + "&historyId=" + encodeURIComponent(historyId),
-        dataType: "json",
+        type: 'GET',
+        url: '/api/user/historyTableData?tabName=' + encodeURIComponent(baseTable)
+            + '&historyId=' + encodeURIComponent(historyId),
+        dataType: 'json',
         timeout: 600000
     }).done(function (data) {
-        var rows = hrmsCoerceApiRows(data && data.result);
-        if (rows.length) {
-            try {
+        try {
+            var rows = hrmsCoerceApiRows(data && data.result);
+            if (rows.length) {
                 historyTableData = rows;
                 renderDataTable(rows, '#dataTable');
                 showHistoryResultsTable();
                 setHistoryEmptyState(false);
-            } catch (e) {
-                console.error('Failed to render history table', e);
-                setHistoryEmptyState(true, 'Data loaded but could not render the grid.');
+            } else {
                 clearHistoryResults();
+                setHistoryEmptyState(true, 'No records in this snapshot.');
             }
-        } else {
+        } catch (e) {
+            console.error('Failed to render history table', e);
             clearHistoryResults();
-            setHistoryEmptyState(true, 'No records in this snapshot.');
+            setHistoryEmptyState(true, 'Data loaded but could not render the grid.');
         }
     }).fail(function (xhr) {
         clearHistoryResults();
         setHistoryEmptyState(true);
         hrmsShowApiError('no-data-message', xhr, hrmsAjaxErrorMessage(xhr));
     }).always(function () {
-        hideHistoryLoader();
+        hrmsForceHideLoader();
     });
 }
 
@@ -281,14 +259,6 @@ function syncDateDisplay(input) {
 
 document.addEventListener('DOMContentLoaded', function () {
     fillTableNameSelect('#tableTemp', '#tableName', tabList, tabTempList);
-
-    var historySelect = document.getElementById('historyId');
-    if (historySelect && window.HrmsCustomSelect) {
-        var historyWrap = historySelect.closest('.hrms-select-wrap');
-        if (historyWrap) {
-            HrmsCustomSelect.destroyWrap(historyWrap);
-        }
-    }
 
     document.querySelectorAll('.hrms-date-wrap').forEach(function (wrap) {
         var input = wrap.querySelector('.hrms-date-input');
@@ -313,12 +283,12 @@ document.addEventListener('DOMContentLoaded', function () {
 function tableToCsv() {
     if (!historyTableData.length) return;
     const keys = Object.keys(historyTableData[0]);
-    var csv = keys.join(',') + "\n";
+    var csv = keys.join(',') + '\n';
     historyTableData.forEach(function (row) {
-        csv += keys.map(function (k) { return row[k]; }).join(',') + "\n";
+        csv += keys.map(function (k) { return row[k]; }).join(',') + '\n';
     });
     var a = document.createElement('a');
     a.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
-    a.download = $("#tableName").val() + '_history.csv';
+    a.download = $('#tableName').val() + '_history.csv';
     a.click();
 }

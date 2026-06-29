@@ -1,5 +1,28 @@
 var historyTableData = [];
 
+function hrmsRowField(row, names) {
+    if (!row || !names) {
+        return null;
+    }
+    for (var i = 0; i < names.length; i++) {
+        var name = names[i];
+        if (row[name] != null && row[name] !== '') {
+            return row[name];
+        }
+        var lower = String(name).toLowerCase();
+        for (var key in row) {
+            if (Object.prototype.hasOwnProperty.call(row, key) && key.toLowerCase() === lower) {
+                return row[key];
+            }
+        }
+    }
+    return null;
+}
+
+function hideHistoryLoader() {
+    $("#loader").modal('hide');
+}
+
 function setHistoryEmptyState(visible, message) {
     var el = document.getElementById('no-data-message');
     if (!el) return;
@@ -62,45 +85,57 @@ function search() {
     resetSnapshotDropdown();
     $("#loader").modal('show');
     $("#historyIdRow").css("visibility", "visible");
-    var tableName = baseTable + "_history";
+
     $.ajax({
         type: "GET",
-        url: "/api/user/historyTableId?tabName=" + encodeURIComponent(tableName)
+        url: "/api/user/historyTableId?tabName=" + encodeURIComponent(baseTable)
             + "&fromDate=" + encodeURIComponent($("#fromDate").val())
             + "&toDate=" + encodeURIComponent($("#toDate").val()),
         dataType: "json",
-        timeout: 600000,
-        success: function (data) {
-            $("#loader").modal('hide');
-            if (data && data.result && data.result.length) {
-                var dropdown = $('#historyId');
-                dropdown.empty().append($('<option>', { value: '', text: 'Choose snapshot…', disabled: true, selected: true }));
-                var seen = {};
-                data.result.forEach(function (item) {
-                    var id = item.HISTORY_ID != null ? item.HISTORY_ID : item.history_id;
-                    var date = item.DATE != null ? item.DATE : item.date;
-                    var key = id + '|' + date;
-                    if (seen[key]) return;
-                    seen[key] = true;
-                    dropdown.append($('<option>', { value: id, text: id + ' | ' + date }));
-                });
-                if (window.HrmsCustomSelect && dropdown[0]) {
-                    HrmsCustomSelect.refreshWrap(dropdown[0].closest('.hrms-select-wrap'));
+        timeout: 600000
+    }).done(function (data) {
+        if (data && data.result && data.result.length) {
+            var dropdown = $('#historyId');
+            dropdown.empty().append($('<option>', { value: '', text: 'Choose snapshot…', disabled: true, selected: true }));
+            var seen = {};
+            var added = 0;
+            data.result.forEach(function (item) {
+                var id = hrmsRowField(item, ['HISTORY_ID', 'history_id', 'ID', 'id']);
+                if (id == null || id === '') {
+                    return;
                 }
+                var date = hrmsRowField(item, ['DATE', 'date', 'HISTORY_DATE', 'history_date', 'CREATED_DATE', 'created_date', 'SNAPSHOT_DATE']);
+                var key = String(id) + '|' + String(date != null ? date : '');
+                if (seen[key]) {
+                    return;
+                }
+                seen[key] = true;
+                var label = date != null && date !== '' ? id + ' | ' + date : String(id);
+                dropdown.append($('<option>', { value: String(id), text: label }));
+                added += 1;
+            });
+            if (window.HrmsCustomSelect && dropdown[0]) {
+                HrmsCustomSelect.refreshWrap(dropdown[0].closest('.hrms-select-wrap'));
+            }
+            if (added > 0) {
                 setHistoryEmptyState(false);
             } else {
                 clearHistoryResults();
                 resetSnapshotDropdown();
-                setHistoryEmptyState(true, 'No snapshots in this date range. Try wider dates (e.g. 2024-05-01 to 2024-12-31).');
+                setHistoryEmptyState(true, 'Snapshots were returned but could not be read. Contact your administrator.');
             }
-        },
-        error: function (xhr) {
-            $("#loader").modal('hide');
+        } else {
             clearHistoryResults();
             resetSnapshotDropdown();
-            setHistoryEmptyState(true);
-            hrmsShowApiError('no-data-message', xhr, hrmsAjaxErrorMessage(xhr));
+            setHistoryEmptyState(true, 'No snapshots in this date range. Try wider dates.');
         }
+    }).fail(function (xhr) {
+        clearHistoryResults();
+        resetSnapshotDropdown();
+        setHistoryEmptyState(true);
+        hrmsShowApiError('no-data-message', xhr, hrmsAjaxErrorMessage(xhr));
+    }).always(function () {
+        hideHistoryLoader();
     });
 }
 
@@ -115,34 +150,32 @@ function searchHistory() {
     $("#loader").modal('show');
     $.ajax({
         type: "GET",
-        url: "/api/user/historyTableData?tabName=" + encodeURIComponent(baseTable + "_history")
+        url: "/api/user/historyTableData?tabName=" + encodeURIComponent(baseTable)
             + "&historyId=" + encodeURIComponent(historyId),
         dataType: "json",
-        timeout: 600000,
-        success: function (data) {
-            $("#loader").modal('hide');
-            if (data && data.result && data.result.length) {
-                try {
-                    historyTableData = data.result;
-                    renderDataTable(data.result, '#dataTable');
-                    showHistoryResultsTable();
-                    setHistoryEmptyState(false);
-                } catch (e) {
-                    console.error('Failed to render history table', e);
-                    setHistoryEmptyState(true, 'Data loaded but could not render the grid.');
-                    clearHistoryResults();
-                }
-            } else {
+        timeout: 600000
+    }).done(function (data) {
+        if (data && data.result && data.result.length) {
+            try {
+                historyTableData = data.result;
+                renderDataTable(data.result, '#dataTable');
+                showHistoryResultsTable();
+                setHistoryEmptyState(false);
+            } catch (e) {
+                console.error('Failed to render history table', e);
+                setHistoryEmptyState(true, 'Data loaded but could not render the grid.');
                 clearHistoryResults();
-                setHistoryEmptyState(true, 'No records in this snapshot.');
             }
-        },
-        error: function (xhr) {
-            $("#loader").modal('hide');
+        } else {
             clearHistoryResults();
-            setHistoryEmptyState(true);
-            hrmsShowApiError('no-data-message', xhr, hrmsAjaxErrorMessage(xhr));
+            setHistoryEmptyState(true, 'No records in this snapshot.');
         }
+    }).fail(function (xhr) {
+        clearHistoryResults();
+        setHistoryEmptyState(true);
+        hrmsShowApiError('no-data-message', xhr, hrmsAjaxErrorMessage(xhr));
+    }).always(function () {
+        hideHistoryLoader();
     });
 }
 
@@ -162,6 +195,8 @@ function syncDateDisplay(input) {
 }
 
 document.addEventListener('DOMContentLoaded', function () {
+    fillTableNameSelect('#tableTemp', '#tableName', tabList, tabTempList);
+
     document.querySelectorAll('.hrms-date-wrap').forEach(function (wrap) {
         var input = wrap.querySelector('.hrms-date-input');
         if (!input) return;
@@ -180,11 +215,6 @@ document.addEventListener('DOMContentLoaded', function () {
             }
         });
     });
-
-    var fromDate = document.getElementById('fromDate');
-    var toDate = document.getElementById('toDate');
-    if (fromDate) fromDate.addEventListener('change', search);
-    if (toDate) toDate.addEventListener('change', search);
 });
 
 function tableToCsv() {

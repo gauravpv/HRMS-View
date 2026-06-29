@@ -48,18 +48,22 @@ public class GeneralServiceImpl implements GeneralService {
 
     @Override
     public List<Object> getHistoryData(String tableName, int historyId) {
-        tabService.requireMasterTable(stripHistorySuffix(tableName));
+        String registered = tabService.resolveRegisteredTableName(tableName);
+        String procedureTable = tabService.toHistoryProcedureTableName(registered);
+        logger.info("getHistoryData registered={} procedureTable={} historyId={}", registered, procedureTable, historyId);
         return callProcedure("{call SP_GET_HISTORY_TABLE_DATA(?,?)}", cs -> {
-            cs.setString(1, tableName);
+            cs.setString(1, procedureTable);
             cs.setInt(2, historyId);
         });
     }
 
     @Override
     public List<Object> getHistoryId(String tableName, String fromDate, String toDate) {
-        tabService.requireMasterTable(stripHistorySuffix(tableName));
+        String registered = tabService.resolveRegisteredTableName(tableName);
+        String procedureTable = tabService.toHistoryProcedureTableName(registered);
+        logger.info("getHistoryId registered={} procedureTable={} from={} to={}", registered, procedureTable, fromDate, toDate);
         return callProcedure("{call SP_GET_HISTORY_ID_DATE(?,?,?)}", cs -> {
-            cs.setString(1, tableName);
+            cs.setString(1, procedureTable);
             cs.setString(2, fromDate);
             cs.setString(3, toDate);
         });
@@ -73,7 +77,7 @@ public class GeneralServiceImpl implements GeneralService {
                 configurer.configure(cs);
                 return cs;
             }, new ArrayList<>());
-            List<Object> rows = JdbcResultHelper.firstResultSet(map);
+            List<Object> rows = JdbcResultHelper.firstNonEmptyResultSet(map);
             long durationMs = System.currentTimeMillis() - started;
             if (durationMs > 3000) {
                 logger.info("Slow procedure sql={} rows={} durationMs={}", sql, rows.size(), durationMs);

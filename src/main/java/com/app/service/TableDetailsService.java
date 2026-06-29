@@ -14,4 +14,10 @@ public interface TableDetailsService {
     void requireMasterTable(String tableName);
     void requireTempTable(String tableName);
     void requireRegisteredTable(String tableName);
-}  
+
+    /** Resolve a UI/API table name to a row in table_details (handles _master/_temp/_history suffixes). */
+    String resolveRegisteredTableName(String tableName);
+
+    /** Physical master table name passed to history stored procedures. */
+    String toHistoryProcedureTableName(String registeredTableName);
+}

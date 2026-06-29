@@ -25,6 +25,26 @@ public final class JdbcResultHelper {
         return Collections.emptyList();
     }
 
+    /** Returns the first non-empty result set (MySQL procedures often emit empty sets before SELECT output). */
+    public static List<Object> firstNonEmptyResultSet(Map<String, Object> procedureResult) {
+        if (procedureResult == null) {
+            return Collections.emptyList();
+        }
+        List<Object> primary = firstResultSet(procedureResult);
+        if (!primary.isEmpty()) {
+            return primary;
+        }
+        for (Map.Entry<String, Object> entry : procedureResult.entrySet()) {
+            if (!entry.getKey().contains("#result-set")) {
+                continue;
+            }
+            if (entry.getValue() instanceof List<?> list && !list.isEmpty()) {
+                return (List<Object>) list;
+            }
+        }
+        return Collections.emptyList();
+    }
+
     public static long countFromFirstRow(Map<String, Object> procedureResult) {
         List<Object> rows = firstResultSet(procedureResult);
         if (rows.isEmpty() || !(rows.get(0) instanceof LinkedCaseInsensitiveMap<?> row)) {

@@ -101,8 +101,9 @@ public class UserRestController {
 
     @GetMapping("/historyTableData")
     public ResponseEntity<AjaxBody> historyTableData(@RequestParam String tabName, @RequestParam int historyId) {
-        logger.debug("historyTableData tabName={} historyId={}", tabName, historyId);
+        logger.info("historyTableData tabName={} historyId={}", tabName, historyId);
         List<Object> list = genService.getHistoryData(tabName, historyId);
+        logger.info("historyTableData tabName={} historyId={} rows={}", tabName, historyId, list.size());
         return ApiResponses.ok("List retrieved", list);
     }
 
@@ -111,8 +112,9 @@ public class UserRestController {
             @RequestParam String tabName,
             @RequestParam String fromDate,
             @RequestParam String toDate) {
-        logger.debug("historyTableId tabName={} from={} to={}", tabName, fromDate, toDate);
+        logger.info("historyTableId tabName={} from={} to={}", tabName, fromDate, toDate);
         List<Object> list = genService.getHistoryId(tabName, fromDate, toDate);
+        logger.info("historyTableId tabName={} snapshots={}", tabName, list.size());
         return ApiResponses.ok("List retrieved", list);
     }
 

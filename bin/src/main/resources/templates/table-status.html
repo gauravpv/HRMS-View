@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Table Status', true)}"></head>
+<body class="font-sans bg-background text-on-surface hrms-table-status-page">
+<th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('table-status')}"></th:block>
+<main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
+    <th:block th:replace="~{fragments/hrms-header :: hrmsHeader('Table Status')}"></th:block>
+    <div class="hrms-page-canvas flex-1">
+        <section class="hrms-data-results" aria-label="Main table status">
+            <div class="hrms-results-block">
+                <div class="hrms-results-header">
+                    <h3>
+                        <span class="material-symbols-outlined text-secondary text-[22px]" aria-hidden="true">table_chart</span>
+                        Main tables
+                    </h3>
+                    <div class="hrms-results-header__meta">
+                        <span id="table-status-updated" class="hrms-badge">Not loaded</span>
+                        <button type="button" id="table-status-refresh" class="hrms-btn hrms-btn-primary hrms-btn-sm">
+                            <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+                            <span class="hrms-btn__label">Refresh</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div id="table-status-empty" class="hrms-empty-state is-visible">
+                    <div class="hrms-empty-state-icon"><span class="material-symbols-outlined">hourglass_empty</span></div>
+                    <p class="font-headline-sm text-primary mb-xs">Loading table status…</p>
+                    <p class="font-body-sm text-on-surface-variant hrms-empty-detail">Fetching counts from the database.</p>
+                </div>
+
+                <div id="table-status-shell" style="visibility:hidden" class="hrms-table-shell data-table-container">
+                    <table id="tableStatusData" class="w-full hrms-data-table">
+                        <thead><tr></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+<th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts(true)}"></th:block>
+<script th:src="@{/js/hrms-api-error.js}"></script>
+<script th:src="@{/js/hrms-table-select.js}"></script>
+<script th:src="@{/js/hrms-table-status.js}"></script>
+</body>
+</html>

@@ -1,0 +1,95 @@
+<aside th:fragment="hrmsSidebar(activeNav)"
+       xmlns:th="http://www.thymeleaf.org"
+       xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6"
+       id="hrms-sidebar"
+       class="hrms-sidebar fixed left-0 top-0 h-full w-[260px] bg-primary border-r border-outline-variant flex flex-col z-50 transition-transform duration-200 custom-scrollbar overflow-y-auto">
+    <div class="hrms-sidebar-brand">
+        <h1 class="font-headline-md text-headline-md font-bold text-on-primary tracking-tight">HRMS</h1>
+    </div>
+
+    <nav class="hrms-sidebar-nav flex-1" aria-label="Main navigation">
+        <a th:href="@{/}"
+           th:classappend="${activeNav == 'dashboard'} ? ' hrms-nav-active' : ' hrms-nav-link'"
+           class="hrms-nav-item">
+            <span class="material-symbols-outlined hrms-nav-icon" aria-hidden="true">dashboard</span>
+            <span class="hrms-nav-text">Dashboard</span>
+        </a>
+
+        <div sec:authorize="hasAnyAuthority('ADMIN','USER')"
+             id="data-mgmt-group"
+             class="hrms-nav-group"
+             th:classappend="${activeNav == 'search-data' || activeNav == 'history-data' || activeNav == 'bulk-upload' || activeNav == 'table-status'} ? ' is-expanded is-child-active' : ''">
+            <button type="button"
+                    id="data-mgmt-toggle"
+                    class="hrms-nav-group-toggle"
+                    aria-expanded="false"
+                    aria-controls="data-mgmt-submenu">
+                <span class="material-symbols-outlined hrms-nav-icon" aria-hidden="true">database</span>
+                <span class="hrms-nav-text flex-1 text-left">Data Management</span>
+                <span id="data-mgmt-chevron" class="material-symbols-outlined hrms-nav-chevron" aria-hidden="true">expand_more</span>
+            </button>
+            <div id="data-mgmt-submenu" class="hrms-nav-submenu" role="region" aria-label="Data Management">
+                <div class="hrms-nav-submenu-inner">
+                    <div class="hrms-nav-submenu-panel">
+                        <a th:href="@{/search-data}"
+                           th:classappend="${activeNav == 'search-data'} ? ' is-active' : ''"
+                           class="hrms-nav-sub-item">
+                            <span class="material-symbols-outlined hrms-nav-sub-icon" aria-hidden="true">search</span>
+                            <span>Search Data</span>
+                        </a>
+                        <a th:href="@{/history-data}"
+                           th:classappend="${activeNav == 'history-data'} ? ' is-active' : ''"
+                           class="hrms-nav-sub-item">
+                            <span class="material-symbols-outlined hrms-nav-sub-icon" aria-hidden="true">history</span>
+                            <span>History Data</span>
+                        </a>
+                        <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/data-upload}"
+                           th:classappend="${activeNav == 'bulk-upload'} ? ' is-active' : ''"
+                           class="hrms-nav-sub-item">
+                            <span class="material-symbols-outlined hrms-nav-sub-icon" aria-hidden="true">cloud_upload</span>
+                            <span>Bulk Upload</span>
+                        </a>
+                        <a th:href="@{/table-status}"
+                           th:classappend="${activeNav == 'table-status'} ? ' is-active' : ''"
+                           class="hrms-nav-sub-item">
+                            <span class="material-symbols-outlined hrms-nav-sub-icon" aria-hidden="true">table_view</span>
+                            <span>Table Status</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/data-movement}"
+           th:classappend="${activeNav == 'data-movement'} ? ' hrms-nav-active' : ' hrms-nav-link'"
+           class="hrms-nav-item">
+            <span class="material-symbols-outlined hrms-nav-icon" aria-hidden="true">swap_horiz</span>
+            <span class="hrms-nav-text">Data Movement</span>
+        </a>
+        <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/user-management}"
+           th:classappend="${activeNav == 'user-management'} ? ' hrms-nav-active' : ' hrms-nav-link'"
+           class="hrms-nav-item">
+            <span class="material-symbols-outlined hrms-nav-icon" aria-hidden="true">manage_accounts</span>
+            <span class="hrms-nav-text">User Management</span>
+        </a>
+    </nav>
+
+    <div class="hrms-sidebar-footer">
+        <div class="hrms-sidebar-profile">
+            <div class="hrms-sidebar-avatar" aria-hidden="true">
+                <span class="material-symbols-outlined">person</span>
+            </div>
+            <div class="hrms-sidebar-user-details">
+                <span class="hrms-sidebar-user-name" th:text="${session.userName} ?: 'User'">User</span>
+                <span class="hrms-sidebar-user-email"
+                      th:text="${session.email} ?: ''"
+                      th:title="${session.email} ?: ''">email</span>
+            </div>
+        </div>
+        <a th:href="@{/logout}" class="hrms-sidebar-signout-btn">
+            <span class="material-symbols-outlined" aria-hidden="true">logout</span>
+            <span>Sign out</span>
+        </a>
+        <span class="hrms-sidebar-version">v2.4.0</span>
+    </div>
+</aside>

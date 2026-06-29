@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Dashboard', false)}"></head>
+<body class="font-sans bg-background text-on-surface">
+<th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('dashboard')}"></th:block>
+<main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
+    <th:block th:replace="~{fragments/hrms-header :: hrmsHeader('Dashboard')}"></th:block>
+    <div class="hrms-page-canvas flex-1">
+        <section class="hrms-dashboard-summary" aria-label="Data overview">
+            <div class="hrms-dashboard-summary__head">
+                <div>
+                    <h2 class="hrms-dashboard-summary__title">Data overview</h2>
+                    <p class="hrms-dashboard-summary__sub">Templates configured — latest activity shown below</p>
+                </div>
+                <span id="dash-summary-updated" class="hrms-badge hrms-dashboard-summary__badge">Loading…</span>
+            </div>
+
+            <div class="hrms-dashboard-stats">
+                <div class="hrms-dashboard-stat">
+                    <span class="hrms-dashboard-stat__icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">table_view</span>
+                    </span>
+                    <div class="hrms-dashboard-stat__body">
+                        <span id="dash-stat-tables" class="hrms-dashboard-stat__value">—</span>
+                        <span class="hrms-dashboard-stat__label">Main tables</span>
+                    </div>
+                </div>
+                <div class="hrms-dashboard-stat hrms-dashboard-stat--wide">
+                    <span class="hrms-dashboard-stat__icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">history</span>
+                    </span>
+                    <div class="hrms-dashboard-stat__body">
+                        <span id="dash-stat-last-activity" class="hrms-dashboard-stat__value hrms-dashboard-stat__value--text">—</span>
+                        <span class="hrms-dashboard-stat__label">Last activity</span>
+                        <span id="dash-stat-last-activity-time" class="hrms-dashboard-stat__hint">—</span>
+                    </div>
+                </div>
+            </div>
+
+            <p id="dash-summary-error" class="hrms-dashboard-summary__error" role="status" hidden></p>
+
+            <div class="hrms-dashboard-quick">
+                <span class="hrms-dashboard-quick__label">Quick access</span>
+                <div class="hrms-dashboard-quick__links">
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/search-data}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                        Search
+                    </a>
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/table-status}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">table_chart</span>
+                        Table status
+                    </a>
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/history-data}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">history</span>
+                        History
+                    </a>
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/data-upload}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">cloud_upload</span>
+                        Bulk upload
+                    </a>
+                    <a sec:authorize="hasAnyAuthority('ADMIN','USER')" th:href="@{/data-movement}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">swap_horiz</span>
+                        Data movement
+                    </a>
+                    <a sec:authorize="hasAuthority('ADMIN')" th:href="@{/user-management}" class="hrms-dashboard-quick__link">
+                        <span class="material-symbols-outlined" aria-hidden="true">manage_accounts</span>
+                        User management
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <section class="hrms-audit-feed" aria-labelledby="dash-audit-heading">
+            <div class="hrms-audit-feed__head">
+                <h3 id="dash-audit-heading" class="hrms-audit-feed__title">
+                    <span class="material-symbols-outlined" aria-hidden="true">history</span>
+                    Audit log
+                </h3>
+                <button type="button" id="dash-audit-refresh" class="hrms-btn hrms-btn-outline hrms-btn-sm">
+                    <span class="material-symbols-outlined" aria-hidden="true">refresh</span>
+                    Refresh
+                </button>
+            </div>
+            <p class="hrms-audit-feed__sub">Sign-in, uploads, and moves to master or main — newest first.</p>
+
+            <div id="dash-audit-loading" class="hrms-audit-feed__loading">
+                <span class="material-symbols-outlined hrms-spin" aria-hidden="true">progress_activity</span>
+                Loading activity…
+            </div>
+            <p id="dash-audit-error" class="hrms-dashboard-summary__error" role="status" hidden></p>
+            <div id="dash-audit-empty" class="hrms-audit-feed__empty" hidden>No activity recorded yet.</div>
+            <ul id="dash-audit-list" class="hrms-audit-feed__list" role="log" aria-live="polite" hidden></ul>
+        </section>
+    </div>
+</main>
+<th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts(false)}"></th:block>
+<script th:src="@{/js/hrms-dashboard.js}"></script>
+</body>
+</html>

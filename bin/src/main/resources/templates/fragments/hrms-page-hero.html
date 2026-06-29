@@ -1,0 +1,13 @@
+<th:block th:fragment="hero(icon, title, description)" xmlns:th="http://www.thymeleaf.org">
+    <header class="hrms-page-hero">
+        <div class="relative z-10 flex flex-col sm:flex-row sm:items-center gap-lg">
+            <div class="hrms-page-hero-icon shrink-0">
+                <span class="material-symbols-outlined" th:text="${icon}">info</span>
+            </div>
+            <div>
+                <h2 th:text="${title}">Title</h2>
+                <p th:text="${description}">Description</p>
+            </div>
+        </div>
+    </header>
+</th:block>

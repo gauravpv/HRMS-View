@@ -38,6 +38,16 @@ public class FormLoginAuthenticationSuccessHandler implements AuthenticationSucc
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
             Authentication authentication) throws java.io.IOException {
         HrmsUserDetails principal = (HrmsUserDetails) authentication.getPrincipal();
+        
+        // Handle hardcoded test admin user (userId = -1)
+        if (principal.getUserId() != null && principal.getUserId() == -1) {
+            logger.info("Test admin user login successful, redirect=/");
+            request.getSession().setAttribute("userName", principal.getUsername());
+            request.getSession().setAttribute("email", principal.getEmail());
+            response.sendRedirect("/");
+            return;
+        }
+        
         Users user = userRepository.getUserById(principal.getUserId());
         if (user == null) {
             logger.warn("Login success handler: user record missing for userId={}", principal.getUserId());

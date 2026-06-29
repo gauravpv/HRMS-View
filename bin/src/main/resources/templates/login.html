@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Login', false)}"></head>
+<body class="hrms-login-page font-sans">
+<header class="hrms-login-topbar">
+    <span class="hrms-login-topbar__mark" aria-hidden="true">
+        <span class="material-symbols-outlined">shield</span>
+    </span>
+    <span class="hrms-login-topbar__title">HRMS</span>
+</header>
+
+<main class="hrms-login-main">
+    <div class="hrms-login-wrap">
+        <article class="hrms-panel hrms-login-card">
+            <div class="hrms-panel-accent"></div>
+            <div class="hrms-panel-body">
+                <div class="hrms-login-card__head">
+                    <div class="hrms-login-card__icon" aria-hidden="true">
+                        <span class="material-symbols-outlined">lock</span>
+                    </div>
+                    <h1 class="hrms-login-card__title">Sign in</h1>
+                    <p class="hrms-login-card__sub">Corporate Integrity System — use your HRMS account</p>
+                </div>
+
+                <div th:if="${param.error}" class="hrms-login-alert hrms-login-alert--error" role="alert">
+                    <span class="material-symbols-outlined" aria-hidden="true">error</span>
+                    <span>Invalid username or password.</span>
+                </div>
+                <div th:if="${param.logout}" class="hrms-login-alert hrms-login-alert--info" role="status">
+                    <span class="material-symbols-outlined" aria-hidden="true">info</span>
+                    <span>You have been signed out.</span>
+                </div>
+
+                <div th:if="${azureEnabled}">
+                    <a th:href="@{/oauth2/authorization/azure}" class="hrms-login-ms-btn">
+                        Sign in with Microsoft
+                    </a>
+                </div>
+
+                <form th:if="${!azureEnabled}" th:action="@{/login}" method="post" class="hrms-login-form">
+                    <div class="hrms-field">
+                        <label for="username">Username or email</label>
+                        <input class="hrms-input" id="username" name="username" type="text" required
+                               autocomplete="username" placeholder="Display name or email"/>
+                        <p class="hrms-field-hint">Password is case-sensitive.</p>
+                    </div>
+                    <div class="hrms-field">
+                        <label for="password">Password</label>
+                        <input class="hrms-input" id="password" name="password" type="password" required
+                               autocomplete="current-password" placeholder="Enter password"/>
+                    </div>
+                    <button type="submit" class="hrms-login-submit">Sign in</button>
+                </form>
+            </div>
+        </article>
+        <p class="hrms-login-footnote">Verified access only</p>
+    </div>
+</main>
+
+<footer class="hrms-login-page-footer">
+    © 2024 HRMS · Corporate Integrity System
+</footer>
+</body>
+</html>

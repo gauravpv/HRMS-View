@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<Configuration status="WARN" monitorInterval="60">
+
+    <Properties>
+
+        <Property name="LOG_DIR">${sys:LOG_PATH:-logs}</Property>
+
+        <Property name="APP_NAME">hrms-view</Property>
+
+        <Property name="LOG_PATTERN">%d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n</Property>
+
+    </Properties>
+
+
+
+    <Appenders>
+
+        <Console name="Console" target="SYSTEM_OUT">
+
+            <PatternLayout pattern="${LOG_PATTERN}" disableAnsi="false"/>
+
+        </Console>
+
+        <RollingFile name="RollingFile"
+
+                     fileName="${LOG_DIR}/${APP_NAME}.log"
+
+                     filePattern="${LOG_DIR}/archive/${APP_NAME}-%d{yyyy-MM-dd}-%i.log.gz">
+
+            <PatternLayout pattern="${LOG_PATTERN}"/>
+
+            <Policies>
+
+                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+
+                <SizeBasedTriggeringPolicy size="15 MB"/>
+
+            </Policies>
+
+            <DefaultRolloverStrategy max="10"/>
+
+        </RollingFile>
+
+    </Appenders>
+
+
+
+    <Loggers>
+
+        <!-- Application: INFO for important events; routine API/DB noise at DEBUG in code -->
+
+        <Logger name="com.app" level="info" additivity="false">
+
+            <AppenderRef ref="Console"/>
+
+            <AppenderRef ref="RollingFile"/>
+
+        </Logger>
+
+
+
+        <!-- Framework / libraries — WARN to avoid filling logs -->
+
+        <Logger name="org.springframework" level="warn"/>
+
+        <Logger name="org.springframework.web" level="warn"/>
+
+        <Logger name="org.springframework.security" level="warn"/>
+
+        <Logger name="org.hibernate" level="warn"/>
+
+        <Logger name="org.hibernate.SQL" level="warn"/>
+
+        <Logger name="com.zaxxer.hikari" level="warn"/>
+
+        <Logger name="org.apache.catalina" level="warn"/>
+
+        <Logger name="org.apache.tomcat" level="warn"/>
+
+        <Logger name="org.apache.coyote" level="warn"/>
+
+        <Logger name="org.apache.kafka" level="warn"/>
+
+        <Logger name="com.azure" level="warn"/>
+
+        <Logger name="reactor.netty" level="warn"/>
+
+        <Logger name="io.netty" level="warn"/>
+
+
+
+        <Root level="warn">
+
+            <AppenderRef ref="Console"/>
+
+            <AppenderRef ref="RollingFile"/>
+
+        </Root>
+
+    </Loggers>
+
+</Configuration>
+
+

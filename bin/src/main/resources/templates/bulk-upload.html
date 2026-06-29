@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="https://www.thymeleaf.org/thymeleaf-extras-springsecurity6">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Bulk Upload', false)}"></head>
+<body class="font-sans bg-background text-on-surface">
+<span id="username" class="hidden" th:text="${session.userName}"></span>
+<th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('bulk-upload')}"></th:block>
+<main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
+    <th:block th:replace="~{fragments/hrms-header :: hrmsHeader('Bulk Upload')}"></th:block>
+    <div class="hrms-page-canvas flex-1">
+        <section class="hrms-data-toolbar" aria-label="Upload settings">
+            <div class="hrms-data-toolbar__main hrms-data-toolbar__main--upload">
+                <div class="hrms-upload-toolbar-layout">
+                    <label for="uploadTableName" class="hrms-upload-toolbar-label">Target table</label>
+                    <div class="hrms-upload-toolbar-controls">
+                        <div class="hrms-select-wrap hrms-upload-select">
+                            <span class="material-symbols-outlined hrms-select-leading">database</span>
+                            <select id="uploadTableName" onchange="downloadFormat()" class="hrms-select">
+                                <option value="Select" selected>Choose table…</option>
+                                <option th:each="t : ${tabList}" th:value="${t}" th:text="${#strings.toUpperCase(#strings.replace(t,'_temp',''))}"></option>
+                            </select>
+                            <span class="material-symbols-outlined hrms-select-chevron">expand_more</span>
+                        </div>
+                        <button type="button" id="format" class="hidden hrms-btn hrms-btn-outline hrms-upload-template"
+                                onclick="formatCSV()">
+                            <span class="material-symbols-outlined" aria-hidden="true">download</span>
+                            <span class="hrms-btn__label">Template</span>
+                        </button>
+                        <label class="hrms-upload-truncate" for="customCheck">
+                            <input type="checkbox" id="customCheck"/>
+                            <span>Truncate before upload</span>
+                        </label>
+                        <button type="button" class="hrms-btn hrms-btn-primary hrms-upload-submit">
+                            <span class="material-symbols-outlined" aria-hidden="true">rocket_launch</span>
+                            <span class="hrms-btn__label">Start upload</span>
+                        </button>
+                    </div>
+                </div>
+                <small class="hrms-upload-table-error text-error font-body-sm" id="table-name-msg" role="alert"></small>
+            </div>
+        </section>
+
+        <section class="hrms-data-results" aria-label="File upload">
+            <div class="hrms-results-block">
+                <div class="hrms-results-header">
+                    <h3><span class="material-symbols-outlined text-secondary text-[22px]">upload_file</span> Upload CSV</h3>
+                    <span class="hrms-badge">Temp tables</span>
+                </div>
+                <p class="hrms-upload-hint">Import CSV into a temp table using the sample template for correct columns.</p>
+                <p th:if="${msg}" class="hrms-upload-msg" th:text="${msg}"></p>
+
+                <div id="dropzone" class="hrms-dropzone hrms-dropzone-page" aria-describedby="file-upload-msg">
+                    <div class="hrms-dropzone-icon">
+                        <span class="material-symbols-outlined">upload_file</span>
+                    </div>
+                    <p class="hrms-dropzone-title">Drop CSV here or click to browse</p>
+                    <p id="file-label" class="hrms-dropzone-file">No file selected</p>
+                    <span class="hrms-upload-limit">Max 10MB · .csv</span>
+                    <input class="hidden" type="file" id="file" accept=".csv"/>
+                </div>
+                <p class="hrms-upload-file-error hidden" id="file-upload-msg" role="alert"></p>
+
+                <ul class="hrms-upload-notes" aria-label="Upload tips">
+                    <li>Pick the correct temp table before uploading</li>
+                    <li>Download and use the column template when available</li>
+                    <li>Do not change column headers in the CSV</li>
+                </ul>
+            </div>
+        </section>
+    </div>
+</main>
+<th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts(false)}"></th:block>
+<script th:src="@{/js/hrms-api-error.js}"></script>
+<script th:src="@{/js/hrms-upload-feedback.js}"></script>
+<script th:src="@{/js/hrms-table-select.js}"></script>
+<script th:src="@{/js/file-upload.js}"></script>
+</body>
+</html>

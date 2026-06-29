@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/hrms-head :: hrmsHead('Search Data', true)}"></head>
+<body class="font-sans bg-background text-on-surface">
+<th:block th:replace="~{fragments/hrms-sidebar :: hrmsSidebar('search-data')}"></th:block>
+<main id="hrms-main" class="ml-[260px] min-h-screen flex flex-col pt-16">
+    <th:block th:replace="~{fragments/hrms-header :: hrmsHeader('Search Data')}"></th:block>
+    <div class="hrms-page-canvas flex-1">
+        <section class="hrms-data-toolbar" aria-label="Query parameters">
+            <div class="hrms-data-toolbar__main hrms-data-toolbar__main--search">
+                <div class="hrms-data-toolbar__fields hrms-data-toolbar__fields--search">
+                    <div class="hrms-field">
+                        <label for="tableTemp">Table type</label>
+                        <div class="hrms-select-wrap">
+                            <span class="material-symbols-outlined hrms-select-leading">category</span>
+                            <select id="tableTemp" onchange="getTable()" class="hrms-select">
+                                <option value="">Choose type…</option>
+                                <option value="temp">Temp</option>
+                                <option value="master">Master</option>
+                            </select>
+                            <span class="material-symbols-outlined hrms-select-chevron">expand_more</span>
+                        </div>
+                    </div>
+                    <div class="hrms-field">
+                        <label for="tableName">Table name</label>
+                        <div class="hrms-select-wrap">
+                            <span class="material-symbols-outlined hrms-select-leading">table_rows</span>
+                            <select id="tableName" class="hrms-select">
+                                <option value="">Choose table…</option>
+                            </select>
+                            <span class="material-symbols-outlined hrms-select-chevron">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hrms-data-toolbar__actions">
+                    <button type="button" onclick="search()" class="hrms-btn hrms-btn-primary">
+                        <span class="material-symbols-outlined" aria-hidden="true">search</span>
+                        <span class="hrms-btn__label">Run query</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+        <section class="hrms-data-results" aria-label="Query results">
+            <div class="hrms-results-block">
+                <div class="hrms-results-header">
+                    <h3><span class="material-symbols-outlined text-secondary text-[22px]">table_rows</span> Results</h3>
+                    <div class="hrms-results-header__meta">
+                        <span class="hrms-badge">Live data</span>
+                        <button type="button" onclick="tableToCsv()" id="export-csv-btn" style="display:none" class="hrms-btn hrms-btn-outline hrms-btn-sm">
+                            <span class="material-symbols-outlined" aria-hidden="true">download</span>
+                            <span class="hrms-btn__label">Export</span>
+                        </button>
+                    </div>
+                </div>
+                <div id="no-data-message" class="hrms-empty-state">
+                    <div class="hrms-empty-state-icon"><span class="material-symbols-outlined">table_chart</span></div>
+                    <p class="font-headline-sm text-primary mb-xs">No records to display</p>
+                    <p class="font-body-sm text-on-surface-variant hrms-empty-detail">Select filters and run the query.</p>
+                </div>
+                <div id="table-div" style="visibility:hidden" class="hrms-table-shell data-table-container">
+                    <table id="dataTable" class="w-full hrms-data-table"><thead><tr></tr></thead><tbody></tbody></table>
+                </div>
+            </div>
+        </section>
+    </div>
+</main>
+<th:block th:replace="~{fragments/hrms-modals :: hrmsModals}"></th:block>
+<th:block th:replace="~{fragments/hrms-scripts :: hrmsScripts(true)}"></th:block>
+<script th:src="@{/js/hrms-api-error.js}"></script>
+<script th:src="@{/js/hrms-table-select.js}"></script>
+<script th:src="@{/js/hrms-search-data.js}"></script>
+<script th:inline="javascript">var tabList = /*[[${tabList}]]*/ []; var tabTempList = /*[[${tabTempList}]]*/ [];</script>
+</body>
+</html>

@@ -1,5 +1,68 @@
 var historyTableData = [];
 
+function hrmsCleanupModalBackdrops() {
+    if ($('.modal.show').length === 0) {
+        $('body').removeClass('modal-open').css('padding-right', '');
+        $('.modal-backdrop').remove();
+    }
+}
+
+function hideHistoryLoader(next) {
+    var $loader = $('#loader');
+    var done = false;
+    function finish() {
+        if (done) {
+            return;
+        }
+        done = true;
+        hrmsCleanupModalBackdrops();
+        if (typeof next === 'function') {
+            next();
+        }
+    }
+    $loader.one('hidden.bs.modal', finish);
+    $loader.modal('hide');
+    setTimeout(function () {
+        if ($loader.hasClass('show')) {
+            $loader.removeClass('show').attr('aria-hidden', 'true').hide();
+        }
+        finish();
+    }, 500);
+}
+
+function hrmsCoerceApiRows(result) {
+    if (!result) {
+        return [];
+    }
+    if (Array.isArray(result)) {
+        return result;
+    }
+    if (typeof result === 'object') {
+        return Object.keys(result)
+            .filter(function (k) { return /^\d+$/.test(k); })
+            .sort(function (a, b) { return Number(a) - Number(b); })
+            .map(function (k) { return result[k]; });
+    }
+    return [];
+}
+
+function hrmsFirstRowValue(row) {
+    if (row == null) {
+        return null;
+    }
+    if (typeof row !== 'object') {
+        return row;
+    }
+    var keys = Object.keys(row);
+    for (var i = 0; i < keys.length; i++) {
+        var value = row[keys[i]];
+        if (value != null && value !== '') {
+            return value;
+        }
+    }
+    return null;
+}
+
 function hrmsRowField(row, names) {
     if (!row || !names) {
         return null;
@@ -17,10 +80,6 @@ function hrmsRowField(row, names) {
         }
     }
     return null;
-}
-
-function hideHistoryLoader() {
-    $("#loader").modal('hide');
 }
 
 function setHistoryEmptyState(visible, message) {
@@ -94,17 +153,21 @@ function search() {
         dataType: "json",
         timeout: 600000
     }).done(function (data) {
-        if (data && data.result && data.result.length) {
+        var rows = hrmsCoerceApiRows(data && data.result);
+        if (rows.length) {
             var dropdown = $('#historyId');
             dropdown.empty().append($('<option>', { value: '', text: 'Choose snapshot…', disabled: true, selected: true }));
             var seen = {};
             var added = 0;
-            data.result.forEach(function (item) {
+            rows.forEach(function (item) {
                 var id = hrmsRowField(item, ['HISTORY_ID', 'history_id', 'HID', 'hid', 'ID', 'id']);
+                if (id == null || id === '') {
+                    id = hrmsFirstRowValue(item);
+                }
                 if (id == null || id === '') {
                     return;
                 }
-                var date = hrmsRowField(item, ['DATE', 'date', 'HISTORY_DATE', 'history_date', 'CREATED_DATE', 'created_date', 'SNAPSHOT_DATE']);
+                var date = hrmsRowField(item, ['DATE', 'date', 'HISTORY_DATE', 'history_date', 'CREATED_DATE', 'created_date', 'SNAPSHOT_DATE', 'snapshot_date']);
                 var key = String(id) + '|' + String(date != null ? date : '');
                 if (seen[key]) {
                     return;
@@ -120,8 +183,6 @@ function search() {
             if (added > 0) {
                 setHistoryEmptyState(false);
             } else {
-                clearHistoryResults();
-                resetSnapshotDropdown();
                 setHistoryEmptyState(true, 'Snapshots were returned but could not be read. Contact your administrator.');
             }
         } else {
@@ -155,10 +216,11 @@ function searchHistory() {
         dataType: "json",
         timeout: 600000
     }).done(function (data) {
-        if (data && data.result && data.result.length) {
+        var rows = hrmsCoerceApiRows(data && data.result);
+        if (rows.length) {
             try {
-                historyTableData = data.result;
-                renderDataTable(data.result, '#dataTable');
+                historyTableData = rows;
+                renderDataTable(rows, '#dataTable');
                 showHistoryResultsTable();
                 setHistoryEmptyState(false);
             } catch (e) {

@@ -37,6 +37,7 @@ import com.app.service.TableDetailsService;
 import com.app.service.TableStatusService;
 import com.app.utility.CommonUtils;
 import com.app.utility.StringUtils;
+import com.app.support.HistorySnapshotMapper;
 import com.app.web.ApiResponses;
 
 import lombok.RequiredArgsConstructor;
@@ -114,8 +115,15 @@ public class UserRestController {
             @RequestParam String toDate) {
         logger.info("historyTableId tabName={} from={} to={}", tabName, fromDate, toDate);
         List<Object> list = genService.getHistoryId(tabName, fromDate, toDate);
-        logger.info("historyTableId tabName={} snapshots={}", tabName, list.size());
-        return ApiResponses.ok("List retrieved", list);
+        List<Map<String, Object>> snapshots = HistorySnapshotMapper.normalize(list);
+        if (!list.isEmpty() && snapshots.isEmpty()) {
+            Object sample = list.get(0);
+            logger.warn("historyTableId tabName={} rawRows={} normalized=0 sampleType={} sample={}",
+                    tabName, list.size(), sample != null ? sample.getClass().getSimpleName() : "null", sample);
+        } else {
+            logger.info("historyTableId tabName={} snapshots={}", tabName, snapshots.size());
+        }
+        return ApiResponses.ok("List retrieved", snapshots);
     }
 
     @PostMapping("/saveTempData")

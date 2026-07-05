@@ -1,5 +1,5 @@
 /**
- * Sends CSV as small Base64-encoded chunks to avoid Akamai WAF blocks
+ * Sends CSV as small Base64-encoded multipart chunks to avoid Akamai WAF blocks
  * (rule 3000180 body size limits and content inspection on CSV/SQL-like data).
  */
 (function (global) {
@@ -48,6 +48,14 @@
     }
 
     function postChunk(file, tableName, uploadId, chunkIndex, totalChunks, chunkText) {
+        var encoded = base64EncodeUtf8(chunkText);
+        if (!encoded) {
+            return Promise.reject({
+                status: 0,
+                responseJSON: { errorMsg: "Upload chunk is empty. Please check the CSV file." }
+            });
+        }
+
         var params = new URLSearchParams({
             uploadId: uploadId,
             chunkIndex: String(chunkIndex),
@@ -57,12 +65,15 @@
             encoding: "base64"
         });
 
+        var formData = new FormData();
+        formData.append("chunk", encoded);
+
         return $.ajax({
             type: "POST",
-            contentType: "text/plain; charset=US-ASCII",
+            contentType: false,
             processData: false,
             url: "/api/user/addFileChunk?" + params.toString(),
-            data: base64EncodeUtf8(chunkText),
+            data: formData,
             timeout: 120000,
             hrmsSuppressSessionRedirect: true
         });

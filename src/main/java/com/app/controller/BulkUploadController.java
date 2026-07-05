@@ -149,22 +149,53 @@ public class BulkUploadController {
     }
 
     /**
-     * Accepts CSV content in small text/plain chunks so each request stays within
+     * Accepts CSV content in small chunks (multipart preferred) so each request stays within
      * Akamai WAF body inspection limits (rule 3000180).
      */
-    @PostMapping(value = "/addFileChunk", consumes = MediaType.TEXT_PLAIN_VALUE)
-    public ResponseEntity<?> addFileChunk(
+    @PostMapping(value = "/addFileChunk", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> addFileChunkMultipart(
             @RequestParam("uploadId") String uploadId,
             @RequestParam("chunkIndex") int chunkIndex,
             @RequestParam("totalChunks") int totalChunks,
             @RequestParam("tableName") String tableName,
             @RequestParam("fileName") String fileName,
             @RequestParam(value = "encoding", defaultValue = "plain") String encoding,
-            @RequestBody String chunkData,
+            @RequestParam("chunk") String chunkData,
+            Principal principal) throws IOException {
+        return handleAddFileChunk(
+                uploadId, chunkIndex, totalChunks, tableName, fileName, encoding, chunkData, principal);
+    }
+
+    @PostMapping(value = "/addFileChunk", consumes = MediaType.TEXT_PLAIN_VALUE)
+    public ResponseEntity<?> addFileChunkPlain(
+            @RequestParam("uploadId") String uploadId,
+            @RequestParam("chunkIndex") int chunkIndex,
+            @RequestParam("totalChunks") int totalChunks,
+            @RequestParam("tableName") String tableName,
+            @RequestParam("fileName") String fileName,
+            @RequestParam(value = "encoding", defaultValue = "plain") String encoding,
+            @RequestBody(required = false) String chunkData,
+            Principal principal) throws IOException {
+        return handleAddFileChunk(
+                uploadId, chunkIndex, totalChunks, tableName, fileName, encoding, chunkData, principal);
+    }
+
+    private ResponseEntity<?> handleAddFileChunk(
+            String uploadId,
+            int chunkIndex,
+            int totalChunks,
+            String tableName,
+            String fileName,
+            String encoding,
+            String chunkData,
             Principal principal) throws IOException {
 
         String username = principal.getName();
         validateChunkedUploadParams(uploadId, chunkIndex, totalChunks, tableName, fileName);
+        if (chunkData == null || chunkData.isBlank()) {
+            throw new HrmsApiException(
+                    "Upload chunk was not received. The network firewall may have removed the request body. Please try again or contact admin.");
+        }
         String decodedChunk = decodeChunkBody(chunkData, encoding);
 
         String bufferKey = username + "_" + uploadId;

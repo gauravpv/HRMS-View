@@ -9,6 +9,7 @@ import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -65,7 +66,8 @@ public class BulkUploadController {
 
     private static final ConcurrentHashMap<String, UploadProgress> uploadProgressMap = new ConcurrentHashMap<>();
     private static final ConcurrentHashMap<String, ChunkedUploadBuffer> chunkedUploadMap = new ConcurrentHashMap<>();
-    private static final int MAX_CHUNK_BYTES = 32_768;
+    private static final int MAX_CHUNK_BYTES = 8192;
+    private static final int MAX_ENCODED_CHUNK_BYTES = 12_288;
     private static final int MAX_TOTAL_CHUNKS = 900;
     private final ExecutorService executorService = Executors.newFixedThreadPool(5);
 
@@ -157,11 +159,13 @@ public class BulkUploadController {
             @RequestParam("totalChunks") int totalChunks,
             @RequestParam("tableName") String tableName,
             @RequestParam("fileName") String fileName,
+            @RequestParam(value = "encoding", defaultValue = "plain") String encoding,
             @RequestBody String chunkData,
             Principal principal) throws IOException {
 
         String username = principal.getName();
-        validateChunkedUploadParams(uploadId, chunkIndex, totalChunks, tableName, fileName, chunkData);
+        validateChunkedUploadParams(uploadId, chunkIndex, totalChunks, tableName, fileName);
+        String decodedChunk = decodeChunkBody(chunkData, encoding);
 
         String bufferKey = username + "_" + uploadId;
         ChunkedUploadBuffer buffer = chunkedUploadMap.computeIfAbsent(bufferKey, key -> {
@@ -181,7 +185,7 @@ public class BulkUploadController {
             throw new HrmsApiException("Duplicate chunk received. Please start the upload again.");
         }
 
-        buffer.chunks[chunkIndex] = chunkData;
+        buffer.chunks[chunkIndex] = decodedChunk;
         buffer.receivedCount++;
 
         if (!buffer.isComplete()) {
@@ -241,8 +245,7 @@ public class BulkUploadController {
             int chunkIndex,
             int totalChunks,
             String tableName,
-            String fileName,
-            String chunkData) {
+            String fileName) {
         if (uploadId == null || uploadId.isBlank() || uploadId.length() > 64) {
             throw new HrmsApiException("Invalid upload session.");
         }
@@ -252,15 +255,36 @@ public class BulkUploadController {
         if (chunkIndex < 0 || chunkIndex >= totalChunks) {
             throw new HrmsApiException("Invalid chunk index.");
         }
-        if (chunkData == null || chunkData.isEmpty() || chunkData.getBytes(StandardCharsets.UTF_8).length > MAX_CHUNK_BYTES) {
-            throw new HrmsApiException("Upload chunk exceeds maximum allowed size.");
-        }
         if (tableName == null || tableName.isBlank()) {
             throw new HrmsApiException("Table name is required.");
         }
         if (fileName == null || fileName.isBlank()) {
             throw new HrmsApiException(BulkUploadMessages.friendlyFileNameError());
         }
+    }
+
+    private String decodeChunkBody(String chunkData, String encoding) {
+        if (chunkData == null || chunkData.isEmpty()) {
+            throw new HrmsApiException("Upload chunk is empty.");
+        }
+        if ("base64".equalsIgnoreCase(encoding)) {
+            if (chunkData.getBytes(StandardCharsets.US_ASCII).length > MAX_ENCODED_CHUNK_BYTES) {
+                throw new HrmsApiException("Upload chunk exceeds maximum allowed size.");
+            }
+            try {
+                byte[] decoded = Base64.getDecoder().decode(chunkData.trim());
+                if (decoded.length > MAX_CHUNK_BYTES) {
+                    throw new HrmsApiException("Upload chunk exceeds maximum allowed size.");
+                }
+                return new String(decoded, StandardCharsets.UTF_8);
+            } catch (IllegalArgumentException ex) {
+                throw new HrmsApiException("Invalid upload chunk encoding.");
+            }
+        }
+        if (chunkData.getBytes(StandardCharsets.UTF_8).length > MAX_CHUNK_BYTES) {
+            throw new HrmsApiException("Upload chunk exceeds maximum allowed size.");
+        }
+        return chunkData;
     }
 
     @GetMapping("/uploadProgress")

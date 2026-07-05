@@ -142,12 +142,20 @@
 
 @media (min-width: 1024px) {
     .hrms-data-toolbar__row--history-actions {
-        grid-template-columns: minmax(20rem, 1.6fr) minmax(11rem, 1fr) auto;
+        grid-template-columns: minmax(20rem, 1fr) auto;
         align-items: end;
     }
 
+    .hrms-data-toolbar__row--history-actions.has-snapshot {
+        grid-template-columns: minmax(16rem, 1.4fr) minmax(12rem, 1fr) auto;
+    }
+
     .hrms-data-toolbar__row--history-actions > .hrms-field:first-child {
-        min-width: 20rem;
+        min-width: 0;
+    }
+
+    .hrms-data-toolbar__row--history-actions.has-snapshot > .hrms-field:first-child {
+        min-width: 16rem;
     }
 }
 
@@ -166,7 +174,11 @@
 
     .hrms-data-toolbar__row--history-actions .hrms-data-toolbar__actions {
         justify-content: flex-end;
-        margin-left: auto;
+        align-self: end;
+    }
+
+    .hrms-data-toolbar__row--history-actions .hrms-btn {
+        height: 2.5rem;
     }
 
 }
@@ -314,6 +326,15 @@
     border: 0;
 }
 
+.hrms-field--snapshot {
+    display: none;
+}
+
+.hrms-data-toolbar__row--history-actions.has-snapshot .hrms-field--snapshot {
+    display: block;
+    min-width: 0;
+}
+
 .hrms-select-wrap--native select.hrms-select,
 .hrms-select-wrap[data-hrms-native="true"] select.hrms-select {
     position: relative;
@@ -332,9 +353,24 @@
     border: 1px solid var(--hrms-outline-variant);
     border-radius: 0.625rem;
     box-shadow: 0 1px 2px rgba(0, 30, 64, 0.05), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-    appearance: auto;
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
     clip: auto;
     overflow: visible;
+}
+
+.hrms-select-wrap--native .hrms-select-chevron,
+.hrms-select-wrap[data-hrms-native="true"] .hrms-select-chevron {
+    position: absolute;
+    right: 0.55rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 1.35rem;
+    line-height: 1;
+    color: var(--hrms-on-surface-variant);
+    pointer-events: none;
+    z-index: 3;
 }
 
 .hrms-select-wrap--native .hrms-select-trigger,

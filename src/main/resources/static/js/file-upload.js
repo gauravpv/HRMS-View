@@ -1,72 +1,116 @@
 var columnNames = "";
+var columnNamesPromise = null;
 var UPLOAD_POLL_MS = 800;
 
 function uploadTableSelect() {
     return $("#uploadTableName").length ? $("#uploadTableName") : $("#tableName");
 }
 
+function hrmsJsonKeyForColumn(columnName) {
+    var bare = String(columnName).replace(/`/g, "").trim();
+    var key = bare.toLowerCase().replace(/_([a-z])/g, function (match, group1) {
+        return group1.toUpperCase();
+    });
+    if (bare.toUpperCase() === "GROUP") {
+        return "`group`";
+    }
+    return key;
+}
+
 function downloadFormat() {
     const tableName = uploadTableSelect().val();
     if (tableName != "Select") {
         $("#format").removeClass("hidden");
-        $.ajax({
+        columnNamesPromise = $.ajax({
             type: "GET",
             contentType: "application/json",
-            url: "/api/user/getColumns?tabName=" + tableName,
+            url: "/api/user/getColumns?tabName=" + encodeURIComponent(tableName),
             dataType: "json",
             cache: false,
-            timeout: 600000,
-            success: function (data) {
+            timeout: 600000
+        })
+            .then(function (data) {
                 columnNames = data.result[0];
-            },
-            error: function (xhr) {
+                return columnNames;
+            })
+            .catch(function (xhr) {
+                columnNamesPromise = null;
                 hrmsShowUploadErrorFromXhr(xhr, "Could not load template");
-            }
-        });
+                throw xhr;
+            });
+    } else {
+        columnNames = "";
+        columnNamesPromise = null;
+        $("#format").addClass("hidden");
     }
 }
 
 function formatCSV() {
     const tableName = uploadTableSelect().val();
-    var listColumns = columnNames.split(",");
-    var obj = {};
-    var csv = "";
-    var data = [];
-    for (var i = 0; i < listColumns.length; i++) {
-        listColumns[i] = listColumns[i].trim();
-        csv += listColumns[i] + (i === listColumns.length - 1 ? "\n" : ",");
+    if (tableName === "Select") {
+        showTableError("Please select a target table first.");
+        return;
     }
-    listColumns.forEach((item) => {
-        if (item != "PREVIOUS_STATE" && item != "NEW_STATE" && item != "ACTION" && item != "UPDATED_BY") {
-            const key_ = item.toLowerCase().replace(/_([a-z])/g, function (match, group1) {
-                return group1.toUpperCase();
-            });
-            obj[key_] = "";
+
+    var buildTemplate = function () {
+        if (!columnNames) {
+            showTableError("Column list is not ready yet. Wait a moment and try Template again.");
+            return;
         }
-    });
-    listColumns.forEach((item) => {
-        if (item == "PREVIOUS_STATE" || item == "NEW_STATE") {
-            const txtObj = JSON.stringify(obj).replaceAll(",", "|");
-            data.push("'" + txtObj + "'");
-        } else if (item == "ACTION") {
-            data.push("'BULK_APPROVED'");
-        } else if (item == "ID") {
-            data.push("default");
-        } else if (item == "CREATED_DATE" || item == "LAST_UPDATED_DATE") {
-            data.push("current_timestamp()");
-        } else if (item == "UPDATED_BY") {
-            data.push("'" + $("#username").text() + "'");
-        } else if (item == "STATUS") {
-            data.push("0");
-        } else {
-            data.push("''");
+        var listColumns = columnNames.split(",");
+        var obj = {};
+        var csv = "";
+        var data = [];
+        for (var i = 0; i < listColumns.length; i++) {
+            listColumns[i] = listColumns[i].trim();
+            var header = listColumns[i];
+            if (/^[`'"].*[`'"]$/.test(header)) {
+                header = header.slice(1, -1);
+            }
+            csv += listColumns[i] + (i === listColumns.length - 1 ? "\n" : ",");
+            if (header !== "PREVIOUS_STATE" && header !== "NEW_STATE" && header !== "ACTION" && header !== "UPDATED_BY") {
+                obj[hrmsJsonKeyForColumn(header)] = "";
+            }
         }
-    });
-    csv += data.join(",") + "\n";
-    var hiddenElement = document.createElement("a");
-    hiddenElement.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
-    hiddenElement.download = tableName + "_format.csv";
-    hiddenElement.click();
+        listColumns.forEach(function (item) {
+            var header = item.trim();
+            if (/^[`'"].*[`'"]$/.test(header)) {
+                header = header.slice(1, -1);
+            }
+            if (header === "PREVIOUS_STATE" || header === "NEW_STATE") {
+                var txtObj = JSON.stringify(obj).replaceAll(",", "|");
+                data.push("'" + txtObj + "'");
+            } else if (header === "ACTION") {
+                data.push("'BULK_APPROVED'");
+            } else if (header === "ID") {
+                data.push("default");
+            } else if (header === "CREATED_DATE" || header === "LAST_UPDATED_DATE") {
+                data.push("current_timestamp()");
+            } else if (header === "UPDATED_BY") {
+                data.push("'" + $("#username").text() + "'");
+            } else if (header === "STATUS") {
+                data.push("0");
+            } else {
+                data.push("''");
+            }
+        });
+        csv += data.join(",") + "\n";
+        var hiddenElement = document.createElement("a");
+        hiddenElement.href = "data:text/csv;charset=utf-8," + encodeURI(csv);
+        hiddenElement.download = tableName + "_format.csv";
+        hiddenElement.click();
+    };
+
+    if (columnNamesPromise) {
+        columnNamesPromise.then(buildTemplate);
+    } else if (columnNames) {
+        buildTemplate();
+    } else {
+        downloadFormat();
+        if (columnNamesPromise) {
+            columnNamesPromise.then(buildTemplate);
+        }
+    }
 }
 
 function ajaxGet(url) {
@@ -237,40 +281,49 @@ function sendFile() {
     }
 }
 
+function handleAsyncUploadStarted(data) {
+    if (data.result && data.result[0] && data.result[0].progressKey) {
+        startProgressPolling(data.result[0].progressKey, data.result[0].totalRows);
+    } else {
+        $("#upload-progress-modal").modal("hide");
+        hrmsShowUploadResult({
+            title: "Upload started",
+            message: data.msg || "Upload started.",
+            isError: false
+        });
+    }
+}
+
+function handleAsyncUploadStartError(e) {
+    if (typeof window.hrmsSessionResumeIdle === "function") {
+        window.hrmsSessionResumeIdle();
+    }
+    $("#upload-progress-modal").modal("hide");
+    hrmsShowUploadErrorFromXhr(e, "Upload could not start");
+    showFileUploadError(
+        (e.responseJSON && e.responseJSON.errorMsg) ||
+            "Upload could not start. Check the file and table, then try again."
+    );
+}
+
 function startAsyncUpload(file, tableName) {
-    var formData = new FormData();
-    formData.append("file", file);
-    $.ajax({
-        type: "POST",
-        contentType: false,
-        processData: false,
-        url: "/api/user/addFileAsync?tableName=" + encodeURIComponent(tableName),
-        data: formData,
-        timeout: 1800000,
-        success: function (data) {
-            if (data.result && data.result[0] && data.result[0].progressKey) {
-                startProgressPolling(data.result[0].progressKey, data.result[0].totalRows);
-            } else {
-                $("#upload-progress-modal").modal("hide");
-                hrmsShowUploadResult({
-                    title: "Upload started",
-                    message: data.msg || "Upload started.",
-                    isError: false
-                });
-            }
-        },
-        error: function (e) {
-            if (typeof window.hrmsSessionResumeIdle === "function") {
-                window.hrmsSessionResumeIdle();
-            }
-            $("#upload-progress-modal").modal("hide");
-            hrmsShowUploadErrorFromXhr(e, "Upload could not start");
-            showFileUploadError(
-                (e.responseJSON && e.responseJSON.errorMsg) ||
-                    "Upload could not start. Check the file and table, then try again."
-            );
-        }
-    });
+    var uploadPromise =
+        typeof window.hrmsUploadCsvInChunks === "function"
+            ? window.hrmsUploadCsvInChunks(file, tableName)
+            : $.ajax({
+                  type: "POST",
+                  contentType: false,
+                  processData: false,
+                  url: "/api/user/addFileAsync?tableName=" + encodeURIComponent(tableName),
+                  data: (function () {
+                      var formData = new FormData();
+                      formData.append("file", file);
+                      return formData;
+                  })(),
+                  timeout: 1800000
+              });
+
+    uploadPromise.then(handleAsyncUploadStarted).catch(handleAsyncUploadStartError);
 }
 
 function startProgressPolling(progressKey, totalRows) {

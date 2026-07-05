@@ -25,43 +25,46 @@ function hrmsFormatCell(value) {
     return value;
 }
 
-function renderDataTable(data, tableSelector) {
+function renderDataTable(data, tableSelector, options) {
+    options = options || {};
     if (!data || !data.length) {
+        if (typeof options.onReady === "function") {
+            options.onReady();
+        }
         return;
     }
     var table = $(tableSelector);
-    if (table.parent().hasClass('hrms-dt-table-area')) {
+    if (table.parent().hasClass("hrms-dt-table-area")) {
         table.unwrap();
     }
     if ($.fn.DataTable.isDataTable(table)) {
         table.DataTable().clear().destroy();
     }
-    table.find('thead tr').empty();
-    table.find('tbody').empty();
+    table.find("thead tr").empty();
+    table.find("tbody").empty();
 
     var keys = Object.keys(data[0]);
     keys.forEach(function (k) {
-        table.find('thead tr').append($('<th>').text(k));
+        table.find("thead tr").append($("<th>").text(k));
     });
 
     var columns = keys.map(function (k) {
         return {
             title: k,
-            data: function (row) {
-                return row[k];
-            },
+            data: k,
+            defaultContent: "",
             render: function (value) {
                 return hrmsFormatCell(value);
             }
         };
     });
 
-    table.addClass('hrms-data-table display compact stripe');
+    table.addClass("hrms-data-table display compact stripe");
 
     var columnDefs = [];
     keys.forEach(function (k, idx) {
-        if (k === 'ACTION' || k === 'UPDATED_BY' || k === 'CITY_NAME') {
-            columnDefs.push({ targets: idx, width: '9rem' });
+        if (k === "ACTION" || k === "UPDATED_BY" || k === "CITY_NAME") {
+            columnDefs.push({ targets: idx, width: "9rem" });
         }
     });
 
@@ -74,28 +77,33 @@ function renderDataTable(data, tableSelector) {
         pageLength: 25,
         lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
         deferRender: true,
+        processing: true,
         autoWidth: false,
         order: [],
         dom: '<"hrms-dt-toolbar"f>rt<"hrms-dt-footer"lpi>',
         initComplete: function () {
             var $table = $(this.api().table().node());
-            if (!$table.parent().hasClass('hrms-dt-table-area')) {
+            if (!$table.parent().hasClass("hrms-dt-table-area")) {
                 $table.wrap('<div class="hrms-dt-table-area custom-scrollbar"></div>');
+            }
+            if (typeof options.onReady === "function") {
+                options.onReady();
             }
         },
         language: {
-            search: '',
-            searchPlaceholder: 'Filter rows…',
-            lengthMenu: 'Show _MENU_',
-            info: 'Showing _START_–_END_ of _TOTAL_',
-            infoEmpty: 'No matching rows',
-            infoFiltered: '(filtered from _MAX_ total)',
-            zeroRecords: 'No matching rows',
+            search: "",
+            searchPlaceholder: "Filter rows…",
+            lengthMenu: "Show _MENU_",
+            info: "Showing _START_–_END_ of _TOTAL_",
+            infoEmpty: "No matching rows",
+            infoFiltered: "(filtered from _MAX_ total)",
+            zeroRecords: "No matching rows",
+            processing: "Loading rows…",
             paginate: {
-                first: '«',
-                previous: '‹',
-                next: '›',
-                last: '»'
+                first: "«",
+                previous: "‹",
+                next: "›",
+                last: "»"
             }
         }
     });

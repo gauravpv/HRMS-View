@@ -38,7 +38,9 @@ import com.app.service.TableStatusService;
 import com.app.utility.CommonUtils;
 import com.app.utility.StringUtils;
 import com.app.dto.HistorySnapshotDto;
+import com.app.support.BulkUploadValidation;
 import com.app.support.HistorySnapshotMapper;
+import com.app.support.SearchResultMapper;
 import com.app.web.ApiResponses;
 
 import lombok.RequiredArgsConstructor;
@@ -95,10 +97,20 @@ public class UserRestController {
     }
 
     @GetMapping("/searchTableData")
-    public ResponseEntity<AjaxBody> searchTableData(@RequestParam String tabName) {
-        logger.debug("searchTableData tabName={}", tabName);
+    public ResponseEntity<AjaxBody> searchTableData(
+            @RequestParam String tabName,
+            @RequestParam(defaultValue = "true") boolean lite) {
+        logger.debug("searchTableData tabName={} lite={}", tabName, lite);
         List<Object> list = genService.getAllData(tabName);
-        return ApiResponses.ok("List retrieved", list);
+        if (!lite) {
+            return ApiResponses.ok("List retrieved", list);
+        }
+        SearchResultMapper.GridResult grid = SearchResultMapper.forGrid(list);
+        String message = grid.truncated()
+                ? "Showing " + grid.rows().size() + " of " + grid.totalRows()
+                        + " rows. Export downloads the full result."
+                : "List retrieved";
+        return ApiResponses.ok(message, grid.rows());
     }
 
     @GetMapping("/historyTableData")
@@ -263,18 +275,31 @@ public class UserRestController {
 
     private List<String> parseCsv(MultipartFile formData) throws IOException {
         List<String> data = new ArrayList<>();
+        String[] headerNames = null;
         try (InputStream inputStream = formData.getInputStream();
                 Reader reader = new BufferedReader(new InputStreamReader(inputStream));
                 CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT)) {
             for (CSVRecord csvRecord : csvParser) {
+                long rowNum = csvRecord.getRecordNumber();
+                if (rowNum == 1) {
+                    headerNames = new String[csvRecord.size()];
+                    for (int i = 0; i < csvRecord.size(); i++) {
+                        String h = csvRecord.get(i);
+                        headerNames[i] = h != null && !h.isBlank() ? h.trim() : "Column " + (i + 1);
+                    }
+                }
                 StringBuilder values = new StringBuilder();
                 for (int i = 0; i < csvRecord.size(); i++) {
                     String cell = csvRecord.get(i);
+                    String columnName = headerNames != null && i < headerNames.length
+                            ? headerNames[i]
+                            : "Column " + (i + 1);
                     if (cell != null
+                            && BulkUploadValidation.shouldValidateCell(columnName)
                             && !StringUtils.isAlphanumericSpace(CommonUtils.customReplace(cell, excelValidation))) {
                         throw new HrmsApiException(
                                 "Data validation error for the field: " + cell
-                                        + " in Row: " + csvRecord.getRecordNumber()
+                                        + " in Row: " + rowNum
                                         + " and Column: " + (i + 1));
                     }
                     if (cell == null) {

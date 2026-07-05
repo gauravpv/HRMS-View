@@ -64,7 +64,26 @@ function populateSnapshotDropdown(rows) {
         dropdown.append($('<option>', { value: String(id), text: label }));
         added += 1;
     });
+
+    var wrap = document.querySelector('#historyId') && document.querySelector('#historyId').closest('.hrms-select-wrap');
+    if (window.HrmsCustomSelect && wrap) {
+        HrmsCustomSelect.refreshWrap(wrap);
+    }
     return added;
+}
+
+function showSnapshotField() {
+    var row = document.getElementById('historyActionsRow');
+    if (row) {
+        row.classList.add('has-snapshot');
+    }
+}
+
+function hideSnapshotField() {
+    var row = document.getElementById('historyActionsRow');
+    if (row) {
+        row.classList.remove('has-snapshot');
+    }
 }
 
 function hrmsFirstRowValue(row) {
@@ -117,6 +136,7 @@ function getTable() {
     fillTableNameSelect('#tableTemp', '#tableName', tabList, tabTempList);
     clearHistoryResults();
     resetSnapshotDropdown();
+    hideSnapshotField();
 }
 
 function clearHistoryResults() {
@@ -161,7 +181,7 @@ function search() {
     resetSnapshotDropdown();
     setHistoryEmptyState(false);
     $('#loader').modal('show');
-    $('#historyIdRow').css('visibility', 'visible');
+    showSnapshotField();
 
     $.ajax({
         type: 'GET',

@@ -39,13 +39,9 @@ function hrmsAjaxErrorMessage(xhr) {
     }
     if (xhr.status === 403) {
         if (typeof window.hrmsIsUploadInProgress === "function" && window.hrmsIsUploadInProgress()) {
-            return (
-                "Upload blocked by network security (HTTP 403). " +
-                "This is usually the firewall (WAF) rejecting a chunk request. " +
-                "Try again after deployment, or ask infra to allow POST /api/user/addFileChunk."
-            );
+            return "Upload failed. Please try again or contact your administrator.";
         }
-        return "Access denied or request blocked. Please contact admin.";
+        return "Unable to load data. Please contact admin.";
     }
     if (xhr.responseJSON && xhr.responseJSON.errorMsg) {
         return xhr.responseJSON.errorMsg;

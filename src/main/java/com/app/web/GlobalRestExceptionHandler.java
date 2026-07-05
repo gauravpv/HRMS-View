@@ -12,6 +12,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 
 import com.app.dto.AjaxError;
 import com.app.exception.HrmsApiException;
+import com.app.support.UserFacingMessages;
 
 @RestControllerAdvice(basePackages = "com.app.controller")
 public class GlobalRestExceptionHandler {
@@ -38,19 +39,24 @@ public class GlobalRestExceptionHandler {
         logger.warn("Bad request: {}", ex.getMessage());
         if (ex instanceof MissingServletRequestPartException partEx
                 && "chunk".equals(partEx.getRequestPartName())) {
-            return ApiResponses.clientError(
-                    "Upload chunk was not received. The network firewall may have removed the request body. Please try again or contact admin.");
+            logger.warn(
+                    "Upload chunk part missing — request body may have been removed by WAF/proxy: {}",
+                    ex.getMessage());
+            return ApiResponses.clientError(UserFacingMessages.UPLOAD_FAILED);
         }
         return ApiResponses.clientError("Invalid request parameters.");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<AjaxError> handleUnreadableBody(HttpMessageNotReadableException ex) {
+        if (ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")) {
+            logger.warn(
+                    "Required request body missing — upload payload may have been removed by WAF/proxy: {}",
+                    ex.getMessage());
+            return ApiResponses.clientError(UserFacingMessages.UPLOAD_FAILED);
+        }
         logger.warn("Unreadable request body: {}", ex.getMessage());
-        String message = ex.getMessage() != null && ex.getMessage().contains("Required request body is missing")
-                ? "Upload data was not received by the server. The network firewall may have removed the request body. Please try again or contact admin."
-                : "Invalid request body.";
-        return ApiResponses.clientError(message);
+        return ApiResponses.clientError("Invalid request body.");
     }
 
     @ExceptionHandler(Exception.class)

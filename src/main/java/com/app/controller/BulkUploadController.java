@@ -193,8 +193,11 @@ public class BulkUploadController {
         String username = principal.getName();
         validateChunkedUploadParams(uploadId, chunkIndex, totalChunks, tableName, fileName);
         if (chunkData == null || chunkData.isBlank()) {
-            throw new HrmsApiException(
-                    "Upload chunk was not received. The network firewall may have removed the request body. Please try again or contact admin.");
+            throw HrmsApiException.internal(
+                    "Upload chunk missing uploadId=" + uploadId + " chunkIndex=" + chunkIndex + "/"
+                            + totalChunks + " user=" + username
+                            + " — request body may have been removed by WAF/proxy",
+                    UserFacingMessages.UPLOAD_FAILED);
         }
         String decodedChunk = decodeChunkBody(chunkData, encoding);
 

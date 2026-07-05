@@ -119,6 +119,7 @@ function ajaxGet(url) {
             type: "GET",
             url: url,
             timeout: 600000,
+            hrmsSuppressSessionRedirect: true,
             success: (data) => resolve(data),
             error: (xhr) => reject(xhr)
         });
@@ -265,8 +266,8 @@ function sendFile() {
     }
 
     const startUploadFlow = () => {
-        if (typeof window.hrmsSessionSuspendIdle === "function") {
-            window.hrmsSessionSuspendIdle();
+        if (!check && typeof window.hrmsBeginUploadSession === "function") {
+            window.hrmsBeginUploadSession();
         }
         if (!check) {
             openUploadProgressModal(false);
@@ -295,8 +296,8 @@ function handleAsyncUploadStarted(data) {
 }
 
 function handleAsyncUploadStartError(e) {
-    if (typeof window.hrmsSessionResumeIdle === "function") {
-        window.hrmsSessionResumeIdle();
+    if (typeof window.hrmsEndUploadSession === "function") {
+        window.hrmsEndUploadSession();
     }
     $("#upload-progress-modal").modal("hide");
     hrmsShowUploadErrorFromXhr(e, "Upload could not start");
@@ -320,7 +321,8 @@ function startAsyncUpload(file, tableName) {
                       formData.append("file", file);
                       return formData;
                   })(),
-                  timeout: 1800000
+                  timeout: 1800000,
+                  hrmsSuppressSessionRedirect: true
               });
 
     uploadPromise.then(handleAsyncUploadStarted).catch(handleAsyncUploadStartError);
@@ -337,6 +339,7 @@ function startProgressPolling(progressKey, totalRows) {
             type: "GET",
             url: "/api/user/uploadProgress?progressKey=" + encodeURIComponent(progressKey),
             timeout: 10000,
+            hrmsSuppressSessionRedirect: true,
             success: function (data) {
                 if (data.result && data.result[0]) {
                     var progress = data.result[0];
@@ -350,8 +353,8 @@ function startProgressPolling(progressKey, totalRows) {
                         progress.status === "COMPLETED_WITH_ERRORS"
                     ) {
                         clearInterval(progressInterval);
-                        if (typeof window.hrmsSessionResumeIdle === "function") {
-                            window.hrmsSessionResumeIdle();
+                        if (typeof window.hrmsEndUploadSession === "function") {
+                            window.hrmsEndUploadSession();
                         }
                         setTimeout(function () {
                             $("#upload-progress-modal").modal("hide");
@@ -367,8 +370,8 @@ function startProgressPolling(progressKey, totalRows) {
             },
             error: function (xhr) {
                 clearInterval(progressInterval);
-                if (typeof window.hrmsSessionResumeIdle === "function") {
-                    window.hrmsSessionResumeIdle();
+                if (typeof window.hrmsEndUploadSession === "function") {
+                    window.hrmsEndUploadSession();
                 }
                 $("#upload-progress-modal").modal("hide");
                 hrmsShowUploadResult({
@@ -384,18 +387,22 @@ function startProgressPolling(progressKey, totalRows) {
 }
 
 function checkTruncateTable(resolve, reject) {
-    $("#message").html(
-        "Existing temp data will be archived to history, then the temp table will be cleared for the new file. Master data is not changed. Continue?"
-    );
+    $("#message").html("All previous data will be lost. Are you sure?");
     $("#exampleModalCenter").modal("show");
     $("#accept-change")
         .off("click")
         .on("click", async () => {
             $("#exampleModalCenter").modal("hide");
+            if (typeof window.hrmsBeginUploadSession === "function") {
+                window.hrmsBeginUploadSession();
+            }
             try {
                 await runTruncateAndHistorySteps();
                 resolve();
             } catch (err) {
+                if (typeof window.hrmsEndUploadSession === "function") {
+                    window.hrmsEndUploadSession();
+                }
                 setUploadStep("step-truncate", "error");
                 setUploadStep("step-history", "error");
                 $("#upload-progress-modal").modal("hide");

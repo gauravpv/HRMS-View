@@ -27,7 +27,8 @@
             processData: false,
             url: "/api/user/addFileChunk?" + params.toString(),
             data: chunkText,
-            timeout: 120000
+            timeout: 120000,
+            hrmsSuppressSessionRedirect: true
         });
     }
 

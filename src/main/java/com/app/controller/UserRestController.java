@@ -96,6 +96,11 @@ public class UserRestController {
         }
     }
 
+    @GetMapping("/sessionPing")
+    public ResponseEntity<AjaxBody> sessionPing() {
+        return ApiResponses.ok("ok", Collections.emptyList());
+    }
+
     @GetMapping("/searchTableData")
     public ResponseEntity<AjaxBody> searchTableData(
             @RequestParam String tabName,

@@ -39,7 +39,7 @@ function hrmsAjaxErrorMessage(xhr) {
     }
     if (xhr.status === 403) {
         if (typeof window.hrmsIsUploadInProgress === "function" && window.hrmsIsUploadInProgress()) {
-            return "Upload failed. Please try again or contact your administrator.";
+            return "Upload failed. Please contact your system administrator.";
         }
         return "Unable to load data. Please contact admin.";
     }

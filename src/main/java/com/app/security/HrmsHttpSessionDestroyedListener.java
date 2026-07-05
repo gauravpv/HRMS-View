@@ -10,6 +10,7 @@ import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.web.session.HttpSessionDestroyedEvent;
 import org.springframework.stereotype.Component;
 
+import com.app.repository.UserRepository;
 import com.app.service.ActivityLogService;
 import com.app.service.impl.UserSessionServiceImpl;
 
@@ -24,12 +25,15 @@ public class HrmsHttpSessionDestroyedListener {
 
     private final UserSessionServiceImpl userSessionService;
     private final ActivityLogService activityLogService;
+    private final UserRepository userRepository;
 
     public HrmsHttpSessionDestroyedListener(
             UserSessionServiceImpl userSessionService,
-            ActivityLogService activityLogService) {
+            ActivityLogService activityLogService,
+            UserRepository userRepository) {
         this.userSessionService = userSessionService;
         this.activityLogService = activityLogService;
+        this.userRepository = userRepository;
     }
 
     @EventListener
@@ -43,10 +47,13 @@ public class HrmsHttpSessionDestroyedListener {
             if (authentication == null) {
                 continue;
             }
-            String principal = authentication.getName();
-            activityLogService.recordLogout(principal);
-            userSessionService.setSessionInactiveOnLogout(principal);
-            logger.info("HTTP session ended principal={}", principal);
+            String displayName = AuthenticationDisplayName.resolve(authentication, userRepository);
+            if (displayName.isBlank()) {
+                continue;
+            }
+            activityLogService.recordLogout(displayName);
+            userSessionService.setSessionInactiveOnLogout(displayName);
+            logger.info("HTTP session ended user={}", displayName);
         }
     }
 }

@@ -8,7 +8,6 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 import com.app.dto.AjaxError;
 import com.app.exception.HrmsApiException;
@@ -31,19 +30,11 @@ public class GlobalRestExceptionHandler {
 
     @ExceptionHandler({
             MissingServletRequestParameterException.class,
-            MissingServletRequestPartException.class,
             MethodArgumentTypeMismatchException.class,
             IllegalArgumentException.class
     })
     public ResponseEntity<AjaxError> handleBadRequest(Exception ex) {
         logger.warn("Bad request: {}", ex.getMessage());
-        if (ex instanceof MissingServletRequestPartException partEx
-                && "chunk".equals(partEx.getRequestPartName())) {
-            logger.warn(
-                    "Upload chunk part missing — request body may have been removed by WAF/proxy: {}",
-                    ex.getMessage());
-            return ApiResponses.clientError(UserFacingMessages.UPLOAD_FAILED);
-        }
         return ApiResponses.clientError("Invalid request parameters.");
     }
 

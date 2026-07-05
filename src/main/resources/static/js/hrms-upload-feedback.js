@@ -1,3 +1,10 @@
+var HRMS_UPLOAD_ADMIN_MESSAGE =
+    "Upload failed. Please contact your system administrator.";
+
+function hrmsUploadSystemErrorMessage() {
+    return HRMS_UPLOAD_ADMIN_MESSAGE;
+}
+
 function hrmsFormatUploadIssue(issue) {
     if (!issue) {
         return "";
@@ -81,12 +88,10 @@ function hrmsShowUploadResult(options) {
 }
 
 function hrmsShowUploadErrorFromXhr(xhr, fallbackTitle) {
-    var body = xhr && xhr.responseJSON ? xhr.responseJSON : {};
-    var message = body.errorMsg || hrmsAjaxErrorMessage(xhr);
     hrmsShowUploadResult({
         title: fallbackTitle || "Upload failed",
-        message: message,
-        issues: hrmsExtractUploadIssuesFromXhr(xhr),
+        message: hrmsUploadSystemErrorMessage(),
+        issues: [],
         isError: true
     });
 }
@@ -108,7 +113,7 @@ function hrmsShowUploadProgressResult(progress) {
     }
     hrmsShowUploadResult({
         title: title,
-        message: progress.message || "",
+        message: isError ? hrmsUploadSystemErrorMessage() : progress.message || "",
         issues: issues,
         moreHint: moreHint,
         isError: isError || hasRowErrors

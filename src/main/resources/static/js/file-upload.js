@@ -300,32 +300,25 @@ function handleAsyncUploadStartError(e) {
         window.hrmsEndUploadSession();
     }
     $("#upload-progress-modal").modal("hide");
-    hrmsShowUploadErrorFromXhr(e, "Upload could not start");
-    showFileUploadError(
-        (e.responseJSON && e.responseJSON.errorMsg) ||
-            "Upload could not start. Check the file and table, then try again."
-    );
+    hrmsShowUploadErrorFromXhr(e, "Upload failed");
+    showFileUploadError(hrmsUploadSystemErrorMessage());
 }
 
 function startAsyncUpload(file, tableName) {
-    var uploadPromise =
-        typeof window.hrmsUploadCsvInChunks === "function"
-            ? window.hrmsUploadCsvInChunks(file, tableName)
-            : $.ajax({
-                  type: "POST",
-                  contentType: false,
-                  processData: false,
-                  url: "/api/user/addFileAsync?tableName=" + encodeURIComponent(tableName),
-                  data: (function () {
-                      var formData = new FormData();
-                      formData.append("file", file);
-                      return formData;
-                  })(),
-                  timeout: 1800000,
-                  hrmsSuppressSessionRedirect: true
-              });
+    var formData = new FormData();
+    formData.append("file", file);
 
-    uploadPromise.then(handleAsyncUploadStarted).catch(handleAsyncUploadStartError);
+    $.ajax({
+        type: "POST",
+        contentType: false,
+        processData: false,
+        url: "/api/user/addFileAsync?tableName=" + encodeURIComponent(tableName),
+        data: formData,
+        timeout: 1800000,
+        hrmsSuppressSessionRedirect: true
+    })
+        .then(handleAsyncUploadStarted)
+        .catch(handleAsyncUploadStartError);
 }
 
 function startProgressPolling(progressKey, totalRows) {
@@ -375,9 +368,8 @@ function startProgressPolling(progressKey, totalRows) {
                 }
                 $("#upload-progress-modal").modal("hide");
                 hrmsShowUploadResult({
-                    title: "Progress unavailable",
-                    message:
-                        "Could not check upload progress. The upload may still be running — refresh the page or try again.",
+                    title: "Upload failed",
+                    message: hrmsUploadSystemErrorMessage(),
                     issues: [],
                     isError: true
                 });
@@ -406,7 +398,7 @@ function checkTruncateTable(resolve, reject) {
                 setUploadStep("step-truncate", "error");
                 setUploadStep("step-history", "error");
                 $("#upload-progress-modal").modal("hide");
-                hrmsShowUploadErrorFromXhr(err, "Pre-upload step failed");
+                hrmsShowUploadErrorFromXhr(err, "Upload failed");
                 reject(new Error("Pre-upload failed"));
             }
         });

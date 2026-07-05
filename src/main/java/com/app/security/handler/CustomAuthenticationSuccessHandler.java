@@ -57,6 +57,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                 userSession.setIsActive(0);
                 userSession.setLastLoginTime(timestamp);
                 userRepository.save(userSession);
+                request.getSession().setAttribute("userName", userSession.getUserName());
+                request.getSession().setAttribute("email", email);
                 activityLogService.recordLogin(
                         userSession.getUserName() != null ? userSession.getUserName() : email);
                 logger.info("Azure login successful email={} redirect=/", email);

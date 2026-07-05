@@ -179,15 +179,15 @@ function tempTableToMaster(tempTableName) {
 
 async function runTruncateAndHistorySteps() {
     const tempTable = uploadTableSelect().val();
-    const masterTable = tempTableToMaster(tempTable);
     openUploadProgressModal(true);
+
+    setUploadStep("step-history", "active");
+    await ajaxGet("/api/user/moveTempToHistory?tableName=" + encodeURIComponent(tempTable));
+    setUploadStep("step-history", "done");
+
     setUploadStep("step-truncate", "active");
     await ajaxGet("/api/user/truncateTable?tableName=" + encodeURIComponent(tempTable));
     setUploadStep("step-truncate", "done");
-
-    setUploadStep("step-history", "active");
-    await ajaxGet("/api/user/moveToHistory?tableName=" + encodeURIComponent(masterTable));
-    setUploadStep("step-history", "done");
 
     revealUploadBar();
 }
@@ -384,7 +384,9 @@ function startProgressPolling(progressKey, totalRows) {
 }
 
 function checkTruncateTable(resolve, reject) {
-    $("#message").html("All previous data will be lost. Are you sure?");
+    $("#message").html(
+        "Existing temp data will be archived to history, then the temp table will be cleared for the new file. Master data is not changed. Continue?"
+    );
     $("#exampleModalCenter").modal("show");
     $("#accept-change")
         .off("click")

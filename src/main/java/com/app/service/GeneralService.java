@@ -20,6 +20,7 @@ public interface GeneralService {
             String headers, List<String> valueRows, String tableName, int firstDataRowNumber);
     String truncateTable(String tableName);
     String moveToHistory(String tableName);
+    String moveTempToHistory(String tableName);
     String checkDataExists(String tableName);
     String masterDataMove(List<String> tableNames);
     String mainDataMove(List<String> tableNames);

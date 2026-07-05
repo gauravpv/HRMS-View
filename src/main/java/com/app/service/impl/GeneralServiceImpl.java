@@ -271,9 +271,17 @@ public class GeneralServiceImpl implements GeneralService {
     @Override
     public String moveToHistory(String tableName) {
         tabService.requireMasterTable(tableName);
-        final String procedure = DataMovementProcedures.moveToHistory(tableName);
+        final String procedure = DataMovementProcedures.moveMasterToHistory(tableName);
         executeProcedure(tableName, procedure);
         return "Moved to History!";
+    }
+
+    @Override
+    public String moveTempToHistory(String tableName) {
+        tabService.requireTempTable(tableName);
+        final String procedure = DataMovementProcedures.moveTempToHistory(tableName);
+        executeProcedure(tableName, procedure);
+        return "Temp data moved to history!";
     }
 
     private void executeProcedure(String tableName, String procedure) {

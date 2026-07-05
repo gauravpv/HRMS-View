@@ -233,6 +233,13 @@ public class UserRestController {
         return ApiResponses.ok(msg);
     }
 
+    @GetMapping("/moveTempToHistory")
+    public ResponseEntity<AjaxBody> moveTempToHistory(@RequestParam String tableName) {
+        logger.info("moveTempToHistory table={}", tableName);
+        String msg = genService.moveTempToHistory(tableName);
+        return ApiResponses.ok(msg);
+    }
+
     @PostMapping("/masterDataMovement")
     public ResponseEntity<AjaxBody> masterDataMovement(StringListDto tableNames, Principal principal) {
         List<String> tables = resolveMovementTables(tableNames);

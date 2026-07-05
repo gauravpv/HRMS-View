@@ -22,9 +22,14 @@ public final class DataMovementProcedures {
         return "SP_MOVE_" + baseTableKey(masterTableName);
     }
 
-    /** e.g. minimum_wages_master → SP_MOVE_MINIMUM_WAGES_MASTER_HISTORY */
-    public static String moveToHistory(String masterTableName) {
+    /** e.g. band_master → SP_MOVE_BAND_MASTER_HISTORY (used when promoting temp → master). */
+    public static String moveMasterToHistory(String masterTableName) {
         return "SP_MOVE_" + masterTableName.toUpperCase(Locale.ROOT) + "_HISTORY";
+    }
+
+    /** e.g. band_temp → SP_MOVE_BAND_TEMP_HISTORY (used before replacing temp upload data). */
+    public static String moveTempToHistory(String tempTableName) {
+        return "SP_MOVE_" + tempTableName.toUpperCase(Locale.ROOT) + "_HISTORY";
     }
 
     private static String baseTableKey(String masterTableName) {
